@@ -26,17 +26,17 @@ public class Dog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "dog_id")
+    @Column(name = "dogId")
     private Long dogId;
 
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "breed_id", nullable = false)
+    @JoinColumn(name = "breedId", nullable = false)
     private Breed breed;
 
-    @Column(name = "birth_date", nullable = false)
+    @Column(name = "birthDate", nullable = false)
     private LocalDate birthDate;
 
     @Enumerated(EnumType.STRING)
@@ -44,39 +44,39 @@ public class Dog {
     private Gender gender;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "dog_size", nullable = false)
+    @Column(name = "dogSize", nullable = false)
     private DogSize dogSize;
 
     @Column(name = "weight", nullable = false, precision = 5, scale = 2)
     private BigDecimal weight;
 
-    @Column(name = "health_status", columnDefinition = "TEXT")
+    @Column(name = "healthStatus", columnDefinition = "TEXT")
     private String healthStatus;
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "adoption_status", nullable = false)
+    @Column(name = "adoptionStatus", nullable = false)
     private AdoptionStatus adoptionStatus;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "createdAt", nullable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updatedAt", nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(name = "image_url", nullable = false, length = 500)
+    @Column(name = "imageUrl", nullable = false, length = 500)
     private String imageUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id", nullable = false)
+    @JoinColumn(name = "memberId", nullable = false)
     private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "shelter_id")
+    @JoinColumn(name = "shelterId")
     private Shelter shelter;
 
     @Builder

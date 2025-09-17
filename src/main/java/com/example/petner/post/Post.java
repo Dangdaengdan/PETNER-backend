@@ -19,7 +19,7 @@ public class Post {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "post_id")
+    @Column(name = "postId")
     private Long postId;
 
     @Column(name = "title", nullable = false, length = 200)
@@ -28,22 +28,22 @@ public class Post {
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "view_count", nullable = false)
+    @Column(name = "viewCount", nullable = false)
     private Integer viewCount = 0;
 
-    @Column(name = "thumb_image_url", length = 500)
+    @Column(name = "thumbImageUrl", length = 500)
     private String thumbImageUrl;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "createdAt", nullable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updatedAt", nullable = false)
     private LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_id", nullable = false)
+    @JoinColumn(name = "authorId", nullable = false)
     private Member author;
 
     @Builder

@@ -2,6 +2,6 @@
 -- 견종 테이블 생성
 
 CREATE TABLE breeds (
-    breed_id BIGSERIAL PRIMARY KEY,
+    breedId BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE
 );
