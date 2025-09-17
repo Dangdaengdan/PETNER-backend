@@ -40,7 +40,8 @@
       "Bash(dir:*)",
       "Bash(ls:*)",
       "Bash(ps:*)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "Read(//c/Users/chaeh/OneDrive/문서/2025 Cursor AI 기반 VIBE CODING 실전활용 경진대회/PETNER/PETNER-backend/src/main/java/com/example/petner/**)"
     ],
     "deny": []
   }
