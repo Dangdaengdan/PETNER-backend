@@ -2,8 +2,8 @@
 -- 초기 데이터 삽입
 
 -- 시퀀스 초기화
-ALTER SEQUENCE locations_locationId_seq RESTART WITH 1;
-ALTER SEQUENCE breeds_breedId_seq RESTART WITH 1;
+ALTER SEQUENCE locations_location_id_seq RESTART WITH 1;
+ALTER SEQUENCE breeds_breed_id_seq RESTART WITH 1;
 
 -- 지역 데이터 삽입
 INSERT INTO locations (state, district) VALUES
