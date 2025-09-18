@@ -21,10 +21,10 @@ public class Member {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "memberId")
+    @Column(name = "member_id")
     private Long memberId;
 
-    @Column(name = "kakaoId", nullable = false, unique = true, length = 255)
+    @Column(name = "kakao_id", nullable = false, unique = true, length = 255)
     private String kakaoId;
 
     @Column(name = "email", unique = true, length = 255)
@@ -38,22 +38,22 @@ public class Member {
     private Gender gender;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "housingType", nullable = false)
+    @Column(name = "housing_type", nullable = false)
     private HousingType housingType;
 
     @CreationTimestamp
-    @Column(name = "createdAt", nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updatedAt", nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     @Column(name = "contact", nullable = false, length = 200)
     private String contact;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "locationId", nullable = false)
+    @JoinColumn(name = "location_id", nullable = false)
     private Location location;
 
     @Builder

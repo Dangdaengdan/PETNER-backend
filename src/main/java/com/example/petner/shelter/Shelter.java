@@ -19,28 +19,28 @@ public class Shelter {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "shelterId")
+    @Column(name = "shelter_id")
     private Long shelterId;
 
     @Column(name = "name", nullable = false, unique = true, length = 100)
     private String name;
 
-    @Column(name = "detailAddress", nullable = false, length = 255)
+    @Column(name = "detail_address", nullable = false, length = 255)
     private String detailAddress;
 
-    @Column(name = "shelterContact", nullable = false, length = 50)
+    @Column(name = "shelter_contact", nullable = false, length = 50)
     private String shelterContact;
 
     @CreationTimestamp
-    @Column(name = "createdAt", nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updatedAt", nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "locationId", nullable = false)
+    @JoinColumn(name = "location_id", nullable = false)
     private Location location;
 
     @Builder
