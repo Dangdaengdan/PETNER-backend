@@ -2,12 +2,12 @@
 -- 메시지 테이블 생성
 
 CREATE TABLE messages (
-    messageId BIGSERIAL PRIMARY KEY,
+    message_id BIGSERIAL PRIMARY KEY,
     content TEXT NOT NULL,
-    sentAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    chatRoomId BIGINT NOT NULL,
-    senderId BIGINT NOT NULL,
+    sent_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    chat_room_id BIGINT NOT NULL,
+    sender_id BIGINT NOT NULL,
 
-    CONSTRAINT fk_messages_chatroom FOREIGN KEY (chatRoomId) REFERENCES chat_rooms(chatRoomId) ON DELETE CASCADE,
-    CONSTRAINT fk_messages_sender FOREIGN KEY (senderId) REFERENCES members(memberId) ON DELETE CASCADE
+    CONSTRAINT fk_messages_chatroom FOREIGN KEY (chat_room_id) REFERENCES chat_rooms(chat_room_id) ON DELETE CASCADE,
+    CONSTRAINT fk_messages_sender FOREIGN KEY (sender_id) REFERENCES members(member_id) ON DELETE CASCADE
 );

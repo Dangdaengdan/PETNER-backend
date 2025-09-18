@@ -19,23 +19,23 @@ public class ChatRoom {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "chatRoomId")
+    @Column(name = "chat_room_id")
     private Long chatRoomId;
 
     @CreationTimestamp
-    @Column(name = "createdAt", nullable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "dogId")
+    @JoinColumn(name = "dog_id")
     private Dog dog;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "memberId1", nullable = false)
+    @JoinColumn(name = "member_id1", nullable = false)
     private Member member1;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "memberId2", nullable = false)
+    @JoinColumn(name = "member_id2", nullable = false)
     private Member member2;
 
     @Builder
