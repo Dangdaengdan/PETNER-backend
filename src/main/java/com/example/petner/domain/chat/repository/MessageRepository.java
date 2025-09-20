@@ -33,6 +33,15 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     Optional<Message> findTopByChatRoomOrderBySentAtDesc(ChatRoom chatRoom);
 
     /**
+     * 채팅방 ID로 가장 최근 메시지 조회
+     * 채팅방 목록에서 마지막 메시지 표시용
+     *
+     * @param chatRoomId 채팅방 ID
+     * @return 가장 최근 메시지 (Optional)
+     */
+    Optional<Message> findTopByChatRoom_ChatRoomIdOrderBySentAtDesc(Long chatRoomId);
+
+    /**
      * 채팅방 ID로 메시지 조회 (시간순 정렬, 페이징 지원)
      * ERD Messages 테이블의 chatRoomId(FK) 기준 조회
      *

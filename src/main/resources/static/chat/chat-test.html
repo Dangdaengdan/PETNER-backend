@@ -17,6 +17,8 @@
         button:hover { background-color: #4a54c4; }
         #room-list div { padding: 10px; border: 1px solid #eee; border-radius: 4px; margin-top: 5px; cursor: pointer; }
         #room-list div:hover { background-color: #f0f0f0; }
+        .room-title { font-weight: bold; margin-bottom: 4px; }
+        .room-last-message { font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         #messages { height: 300px; border: 1px solid #ddd; border-radius: 4px; padding: 10px; margin-bottom: 10px; overflow-y: auto; display: flex; flex-direction: column; }
         .message { padding: 8px 12px; border-radius: 18px; margin-bottom: 8px; max-width: 70%; word-wrap: break-word; }
         .sent { background-color: #5c67f2; color: white; align-self: flex-end; }
@@ -89,13 +91,29 @@
             if (rooms.length === 0) { roomListDiv.innerHTML = '참여중인 채팅방이 없습니다.'; return; }
             rooms.forEach(room => {
                 const roomDiv = document.createElement('div');
+
+                // 채팅방 제목 생성
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'room-title';
                 let roomTitle = `${room.otherMemberInfo.nickname}님과의 대화`;
                 if (room.dogInfo && room.dogInfo.name) {
                     roomTitle += ` (🐶 강아지: ${room.dogInfo.name})`;
                 } else {
                     roomTitle += ` (일반 채팅)`;
                 }
-                roomDiv.innerText = roomTitle;
+                titleDiv.innerText = roomTitle;
+
+                // 최근 메시지 생성
+                const lastMessageDiv = document.createElement('div');
+                lastMessageDiv.className = 'room-last-message';
+                if (room.lastMessageContent) {
+                    lastMessageDiv.innerText = room.lastMessageContent;
+                } else {
+                    lastMessageDiv.innerText = '아직 메시지가 없습니다';
+                }
+
+                roomDiv.appendChild(titleDiv);
+                roomDiv.appendChild(lastMessageDiv);
                 roomDiv.onclick = () => enterChatRoom(room.chatRoomId, room.otherMemberInfo.nickname);
                 roomListDiv.appendChild(roomDiv);
             });
