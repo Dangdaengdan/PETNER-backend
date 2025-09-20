@@ -15,7 +15,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -36,8 +35,8 @@ public class Dog {
     @JoinColumn(name = "breed_id", nullable = false)
     private Breed breed;
 
-    @Column(name = "birth_date", nullable = false)
-    private LocalDate birthDate;
+    @Column(name = "birth_date", nullable = false, length = 6)
+    private String birthDate;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "gender", nullable = false)
@@ -80,7 +79,7 @@ public class Dog {
     private Shelter shelter;
 
     @Builder
-    public Dog(String name, Breed breed, LocalDate birthDate, Gender gender, DogSize dogSize,
+    public Dog(String name, Breed breed, String birthDate, Gender gender, DogSize dogSize,
                BigDecimal weight, String healthStatus, String description, AdoptionStatus adoptionStatus,
                String imageUrl, Member member, Shelter shelter) {
         this.name = name;
