@@ -51,8 +51,10 @@ public enum ErrorCode {
     /* 채팅 관련 (추후 기능 구현시 사용) */
     CHAT_ROOM_NOT_FOUND("404-CH01", "채팅방을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     CHAT_MEMBER_NOT_FOUND("404-CH02", "사용자 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    CHAT_DOG_OWNER_MISMATCH("400-CH03", "강아지 소유자가 채팅방 참여자와 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
     CHAT_INVALID_MESSAGE_TYPE("400-CH04", "유효하지 않은 메시지 타입입니다.", HttpStatus.BAD_REQUEST),
-    CHAT_INVALID_PAYLOAD("400-CH05", "메시지 페이로드가 유효하지 않습니다.", HttpStatus.BAD_REQUEST);
+    CHAT_INVALID_PAYLOAD("400-CH05", "메시지 페이로드가 유효하지 않습니다.", HttpStatus.BAD_REQUEST),
+    CHAT_ALREADY_ADOPTED("409-CH06", "이미 입양된 강아지입니다", HttpStatus.CONFLICT);
 
     private final String errorCode;
     private final String message;
