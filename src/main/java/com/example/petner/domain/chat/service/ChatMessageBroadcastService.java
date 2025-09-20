@@ -1,10 +1,10 @@
 package com.example.petner.domain.chat.service;
 
-import com.example.petner.domain.chat.controller.ChatWebSocketController;
 import com.example.petner.domain.chat.dto.response.ChatMessageResponseDto;
 import com.example.petner.domain.chat.entity.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 /**
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ChatMessageBroadcastService {
 
-    private final ChatWebSocketController chatWebSocketController;
+    private final SimpMessagingTemplate messagingTemplate;
 
     /**
      * 새로운 메시지를 해당 채팅방의 모든 구독자에게 실시간 전송
@@ -27,9 +27,10 @@ public class ChatMessageBroadcastService {
         try {
             ChatMessageResponseDto responseDto = new ChatMessageResponseDto(message);
             Long chatRoomId = message.getChatRoom().getChatRoomId();
+            String destination = "/topic/chat/" + chatRoomId;
 
-            log.info("Broadcasting message {} to chat room {}", message.getMessageId(), chatRoomId);
-            chatWebSocketController.sendMessageToChatRoom(chatRoomId, responseDto);
+            log.info("Broadcasting message {} to {}", message.getMessageId(), destination);
+            messagingTemplate.convertAndSend(destination, responseDto);
 
         } catch (Exception e) {
             log.error("Failed to broadcast message {}: {}", message.getMessageId(), e.getMessage());
@@ -44,8 +45,9 @@ public class ChatMessageBroadcastService {
      */
     public void broadcastMessage(Long chatRoomId, ChatMessageResponseDto messageDto) {
         try {
-            log.info("Broadcasting custom message to chat room {}", chatRoomId);
-            chatWebSocketController.sendMessageToChatRoom(chatRoomId, messageDto);
+            String destination = "/topic/chat/" + chatRoomId;
+            log.info("Broadcasting custom message to {}", destination);
+            messagingTemplate.convertAndSend(destination, messageDto);
 
         } catch (Exception e) {
             log.error("Failed to broadcast custom message to chat room {}: {}", chatRoomId, e.getMessage());
