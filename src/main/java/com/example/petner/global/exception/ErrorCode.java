@@ -49,7 +49,6 @@ public enum ErrorCode {
     LOCATION_INVALID("400-LC02", "유효하지 않은 위치 정보입니다", HttpStatus.BAD_REQUEST),
 
     /* 채팅 관련 */
-    CHATROOM_NOT_FOUND("404-CH01", "채팅방을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     CHAT_ROOM_NOT_FOUND("404-CH01", "채팅방을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     CHAT_MEMBER_NOT_FOUND("404-CH02", "사용자 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     CHAT_UNAUTHORIZED_ACCESS("403-CH03", "채팅방에 대한 접근 권한이 없습니다.", HttpStatus.FORBIDDEN),

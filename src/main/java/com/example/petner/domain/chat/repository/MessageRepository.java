@@ -31,4 +31,35 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findByChatRoomAndSentAtAfter(@Param("chatRoom") ChatRoom chatRoom, @Param("after") LocalDateTime after);
 
     Optional<Message> findTopByChatRoomOrderBySentAtDesc(ChatRoom chatRoom);
+
+    /**
+     * 채팅방 ID로 메시지 조회 (시간순 정렬, 페이징 지원)
+     * ERD Messages 테이블의 chatRoomId(FK) 기준 조회
+     *
+     * @param chatRoomId 채팅방 ID
+     * @param pageable 페이징 정보
+     * @return 해당 채팅방의 메시지 목록
+     */
+    List<Message> findByChatRoom_ChatRoomId(Long chatRoomId, Pageable pageable);
+
+    /**
+     * 채팅방 ID로 모든 메시지 조회 (시간순 정렬)
+     * ERD Messages 테이블의 chatRoomId(FK) 기준 조회
+     *
+     * @param chatRoomId 채팅방 ID
+     * @return 해당 채팅방의 모든 메시지 목록 (오래된 순)
+     */
+    List<Message> findByChatRoom_ChatRoomIdOrderBySentAtAsc(Long chatRoomId);
+
+    /**
+     * 채팅방 ID로 메시지 조회 (최신순)
+     * 기존 테스트용 메서드 유지
+     */
+    List<Message> findByChatRoom_ChatRoomIdOrderBySentAtDesc(Long chatRoomId);
+
+    /**
+     * 전체 메시지 조회 (최신순)
+     * 기존 테스트용 메서드 유지
+     */
+    List<Message> findAllByOrderBySentAtDesc();
 }

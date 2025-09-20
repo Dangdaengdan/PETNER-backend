@@ -3,8 +3,10 @@ package com.example.petner.domain.chat.controller;
 import com.example.petner.domain.chat.dto.request.ChatRoomCreateRequestDto;
 import com.example.petner.domain.chat.dto.response.ChatRoomResponseDto;
 import com.example.petner.domain.chat.dto.response.ChatRoomListResponseDto;
+import com.example.petner.domain.chat.dto.response.ChatMessageResponseDto;
 import com.example.petner.domain.chat.service.ChatRoomService;
 import com.example.petner.domain.chat.service.ChatRoomQueryService;
+import com.example.petner.domain.chat.service.ChatMessageService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,12 +17,13 @@ import java.util.List;
 
 @Tag(name = "chats", description = "채팅 관련 API")
 @RestController
-@RequestMapping("/api/v1/chats/rooms")
+@RequestMapping("/api/v1/chat/rooms")
 @RequiredArgsConstructor
 public class ChatRoomController {
 
     private final ChatRoomService chatRoomService;
     private final ChatRoomQueryService chatRoomQueryService;
+    private final ChatMessageService chatMessageService;
 
     /**
      * 채팅방 생성 API
@@ -57,5 +60,50 @@ public class ChatRoomController {
     public ResponseEntity<List<ChatRoomListResponseDto>> getMemberChatRooms(@PathVariable Long memberId) {
         List<ChatRoomListResponseDto> chatRooms = chatRoomQueryService.getMemberChatRooms(memberId);
         return ResponseEntity.ok(chatRooms);
+    }
+
+    /**
+     * 특정 채팅방의 메시지 내역 조회 API
+     *
+     * ERD Messages 테이블 기준 응답:
+     * - messageId: Messages.messageId (PK)
+     * - senderId: Messages.senderId (FK from Members)
+     * - content: Messages.content
+     * - sendAt: Messages.sendAt
+     *
+     * @param chatRoomId 조회할 채팅방 ID
+     * @param page 페이지 번호 (선택, 기본값: 0)
+     * @param size 페이지 크기 (선택, 기본값: 50)
+     * @return 채팅방 메시지 목록 (200 OK)
+     *
+     * 비즈니스 로직:
+     * 1. 채팅방 존재 여부 검증
+     * 2. 메시지 시간순 정렬 조회 (오래된 메시지부터)
+     * 3. 페이징 적용 (대화 내역이 많을 경우 성능 최적화)
+     * 4. ERD 컬럼명에 맞춘 응답 DTO 반환
+     */
+    @GetMapping("/{chatRoomId}/messages")
+    public ResponseEntity<List<ChatMessageResponseDto>> getChatRoomMessages(
+            @PathVariable Long chatRoomId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size
+    ) {
+        List<ChatMessageResponseDto> messages = chatMessageService.getChatRoomMessages(chatRoomId, page, size);
+        return ResponseEntity.ok(messages);
+    }
+
+    /**
+     * 특정 채팅방의 전체 메시지 내역 조회 API (페이징 없음)
+     *
+     * 프론트엔드 테스트용 엔드포인트
+     * 실제 프로덕션에서는 위의 페이징 API 사용 권장
+     *
+     * @param chatRoomId 조회할 채팅방 ID
+     * @return 채팅방 전체 메시지 목록 (200 OK)
+     */
+    @GetMapping("/{chatRoomId}/messages/all")
+    public ResponseEntity<List<ChatMessageResponseDto>> getAllChatRoomMessages(@PathVariable Long chatRoomId) {
+        List<ChatMessageResponseDto> messages = chatMessageService.getAllChatRoomMessages(chatRoomId);
+        return ResponseEntity.ok(messages);
     }
 }

@@ -7,8 +7,6 @@ import com.example.petner.domain.member.entity.Member;
 import com.example.petner.domain.member.repository.MemberRepository;
 import com.example.petner.global.exception.ErrorCode;
 import com.example.petner.global.exception.customException.ChatException;
-import com.example.petner.global.exception.customException.DogException;
-import com.example.petner.global.exception.customException.MemberException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -32,9 +30,9 @@ public class  ChatRoomValidator {
      */
     public Member[] validateAndGetMembers(Long member1Id, Long member2Id) {
         Member member1 = memberRepository.findById(member1Id)
-                .orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
+                .orElseThrow(() -> new ChatException(ErrorCode.CHAT_MEMBER_NOT_FOUND));
         Member member2 = memberRepository.findById(member2Id)
-                .orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
+                .orElseThrow(() -> new ChatException(ErrorCode.CHAT_MEMBER_NOT_FOUND));
 
         return new Member[]{member1, member2};
     }
@@ -53,7 +51,7 @@ public class  ChatRoomValidator {
         }
 
         Dog dog = dogRepository.findById(dogId)
-                .orElseThrow(() -> new DogException(ErrorCode.DOG_NOT_FOUND));
+                .orElseThrow(() -> new ChatException(ErrorCode.CHAT_DOG_OWNER_MISMATCH));
 
         validateDogAdoptionStatus(dog);
         validateDogOwnership(dog, member1, member2);
@@ -69,7 +67,7 @@ public class  ChatRoomValidator {
      */
     private void validateDogAdoptionStatus(Dog dog) {
         if (dog.getAdoptionStatus() == AdoptionStatus.입양_완료) {
-            throw new DogException(ErrorCode.CHAT_ALREADY_ADOPTED);
+            throw new ChatException(ErrorCode.CHAT_ALREADY_ADOPTED);
         }
     }
 

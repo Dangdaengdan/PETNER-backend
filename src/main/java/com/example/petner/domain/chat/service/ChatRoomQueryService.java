@@ -6,7 +6,7 @@ import com.example.petner.domain.chat.repository.ChatRoomRepository;
 import com.example.petner.domain.member.entity.Member;
 import com.example.petner.domain.member.repository.MemberRepository;
 import com.example.petner.global.exception.ErrorCode;
-import com.example.petner.global.exception.customException.MemberException;
+import com.example.petner.global.exception.customException.ChatException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +35,7 @@ public class ChatRoomQueryService {
      */
     public List<ChatRoomListResponseDto> getMemberChatRooms(Long memberId) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
+                .orElseThrow(() -> new ChatException(ErrorCode.CHAT_MEMBER_NOT_FOUND));
 
         List<ChatRoom> chatRooms = chatRoomRepository.findMemberChatRoomsWithDetails(memberId);
 
