@@ -8,7 +8,7 @@ CREATE TABLE dogs (
     dog_id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     breed_id BIGINT NOT NULL,
-    birth_date DATE NOT NULL,
+    birth_date CHAR(6) NOT NULL,
     gender gender_enum NOT NULL,
     dog_size dog_size_enum NOT NULL,
     weight DECIMAL(5,2) NOT NULL,
