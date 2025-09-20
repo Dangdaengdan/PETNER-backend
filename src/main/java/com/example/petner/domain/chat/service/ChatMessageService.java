@@ -75,7 +75,11 @@ public class ChatMessageService {
             // 4. 메시지 엔티티 생성 및 저장
             Message message = createAndSaveMessage(chatRoom, sender, messageDto.getContent());
 
-            // 5. 응답 DTO 변환
+            // 5. 채팅방 마지막 메시지 시간 갱신 (최근 업데이트된 채팅방이 상위에 오도록)
+            chatRoom.updateLastMessageTime();
+            chatRoomRepository.save(chatRoom); // 변경된 updated_at을 데이터베이스에 반영
+
+            // 6. 응답 DTO 변환
             ChatMessageResponseDto responseDto = new ChatMessageResponseDto(message);
 
             log.info("메시지 저장 완료 - 메시지 ID: {}", message.getMessageId());
