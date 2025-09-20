@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -26,6 +27,10 @@ public class ChatRoom {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dog_id")
     private Dog dog;
@@ -43,5 +48,9 @@ public class ChatRoom {
         this.dog = dog;
         this.member1 = member1;
         this.member2 = member2;
+    }
+
+    public void updateLastMessageTime() {
+        this.updatedAt = LocalDateTime.now();
     }
 }
