@@ -71,4 +71,22 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
      * 기존 테스트용 메서드 유지
      */
     List<Message> findAllByOrderBySentAtDesc();
+
+    /**
+     * 여러 채팅방의 마지막 메시지를 한 번에 조회 (N+1 문제 해결)
+     * Window Function을 사용하여 각 채팅방별 최근 메시지 1개씩만 조회
+     *
+     * @param chatRoomIds 조회할 채팅방 ID 리스트
+     * @return 각 채팅방의 마지막 메시지 리스트
+     */
+    @Query(value = """
+        SELECT m.* FROM messages m
+        INNER JOIN (
+            SELECT chat_room_id, MAX(sent_at) as max_sent_at
+            FROM messages
+            WHERE chat_room_id IN :chatRoomIds
+            GROUP BY chat_room_id
+        ) latest ON m.chat_room_id = latest.chat_room_id AND m.sent_at = latest.max_sent_at
+        """, nativeQuery = true)
+    List<Message> findLastMessagesByChatRoomIds(@Param("chatRoomIds") List<Long> chatRoomIds);
 }

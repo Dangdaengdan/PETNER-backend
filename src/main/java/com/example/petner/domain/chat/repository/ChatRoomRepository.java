@@ -38,4 +38,5 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
         ORDER BY cr.updatedAt DESC
         """)
     List<ChatRoom> findMemberChatRoomsWithDetails(@Param("memberId") Long memberId);
+
 }

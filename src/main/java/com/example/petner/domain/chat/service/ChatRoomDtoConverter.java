@@ -2,6 +2,7 @@ package com.example.petner.domain.chat.service;
 
 import com.example.petner.domain.chat.dto.response.ChatRoomListResponseDto;
 import com.example.petner.domain.chat.entity.ChatRoom;
+import com.example.petner.domain.chat.entity.Message;
 import com.example.petner.domain.chat.repository.MessageRepository;
 import com.example.petner.domain.member.entity.Member;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +19,14 @@ public class ChatRoomDtoConverter {
     private final MessageRepository messageRepository;
 
     /**
-     * ChatRoom 엔티티를 ChatRoomListResponseDto로 변환
+     * ChatRoom 엔티티를 ChatRoomListResponseDto로 변환 (N+1 문제 발생 - 기존 호환성 유지)
      *
      * @param chatRoom 채팅방 엔티티
      * @param currentMemberId 현재 사용자 ID
      * @return 변환된 응답 DTO
+     * @deprecated N+1 문제가 발생할 수 있음. convertToChatRoomListResponseDto(ChatRoom, Long, Message) 사용 권장
      */
+    @Deprecated
     public ChatRoomListResponseDto convertToChatRoomListResponseDto(ChatRoom chatRoom, Long currentMemberId) {
         Member otherMember = determineOtherMember(chatRoom, currentMemberId);
         ChatRoomListResponseDto.OtherMemberInfo otherMemberInfo =
@@ -31,10 +34,42 @@ public class ChatRoomDtoConverter {
 
         ChatRoomListResponseDto.DogInfo dogInfo = createDogInfo(chatRoom);
 
-        // 채팅방의 가장 최근 메시지 조회
+        // 🚨 N+1 문제 발생 지점 - 개별 쿼리 실행
         var lastMessage = messageRepository.findTopByChatRoom_ChatRoomIdOrderBySentAtDesc(chatRoom.getChatRoomId());
         String lastMessageContent = lastMessage.map(message -> message.getContent()).orElse("");
         var lastMessageSentAt = lastMessage.map(message -> message.getSentAt()).orElse(chatRoom.getCreatedAt());
+
+        return new ChatRoomListResponseDto(
+                chatRoom.getChatRoomId(),
+                otherMemberInfo,
+                dogInfo,
+                lastMessageContent,
+                lastMessageSentAt
+        );
+    }
+
+    /**
+     * ChatRoom 엔티티를 ChatRoomListResponseDto로 변환 (N+1 문제 해결)
+     *
+     * @param chatRoom 채팅방 엔티티
+     * @param currentMemberId 현재 사용자 ID
+     * @param lastMessage 미리 조회된 마지막 메시지 (null 가능)
+     * @return 변환된 응답 DTO
+     */
+    public ChatRoomListResponseDto convertToChatRoomListResponseDto(
+            ChatRoom chatRoom,
+            Long currentMemberId,
+            Message lastMessage
+    ) {
+        Member otherMember = determineOtherMember(chatRoom, currentMemberId);
+        ChatRoomListResponseDto.OtherMemberInfo otherMemberInfo =
+                new ChatRoomListResponseDto.OtherMemberInfo(otherMember.getMemberId(), otherMember.getNickname());
+
+        ChatRoomListResponseDto.DogInfo dogInfo = createDogInfo(chatRoom);
+
+        // ✅ N+1 문제 해결 - 미리 조회된 메시지 사용 (추가 쿼리 없음)
+        String lastMessageContent = lastMessage != null ? lastMessage.getContent() : "";
+        var lastMessageSentAt = lastMessage != null ? lastMessage.getSentAt() : chatRoom.getCreatedAt();
 
         return new ChatRoomListResponseDto(
                 chatRoom.getChatRoomId(),
