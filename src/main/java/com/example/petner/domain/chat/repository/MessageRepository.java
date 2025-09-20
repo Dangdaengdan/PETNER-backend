@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface MessageRepository extends JpaRepository<Message, Long> {
@@ -28,4 +29,6 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     @Query("SELECT m FROM Message m WHERE m.chatRoom = :chatRoom AND m.sentAt > :after ORDER BY m.sentAt ASC")
     List<Message> findByChatRoomAndSentAtAfter(@Param("chatRoom") ChatRoom chatRoom, @Param("after") LocalDateTime after);
+
+    Optional<Message> findTopByChatRoomOrderBySentAtDesc(ChatRoom chatRoom);
 }

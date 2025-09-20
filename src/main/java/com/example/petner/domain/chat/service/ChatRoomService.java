@@ -12,6 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+/**
+ * 채팅방 생성 전용 서비스
+ * Single Responsibility Principle을 적용하여 생성 책임만 담당
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -67,4 +71,5 @@ public class ChatRoomService {
         // 6. 응답 DTO로 변환하여 반환
         return new ChatRoomResponseDto(savedChatRoom);
     }
+
 }
