@@ -1,36 +1,17 @@
 package com.example.petner.domain.chat.repository;
 
-import com.example.petner.domain.chat.entity.ChatRoom;
 import com.example.petner.domain.chat.entity.Message;
-import com.example.petner.domain.member.entity.Member;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface MessageRepository extends JpaRepository<Message, Long> {
-
-    List<Message> findByChatRoom(ChatRoom chatRoom);
-
-    List<Message> findBySender(Member sender);
-
-    @Query("SELECT m FROM Message m WHERE m.chatRoom = :chatRoom ORDER BY m.sentAt ASC")
-    List<Message> findByChatRoomOrderBySentAtAsc(@Param("chatRoom") ChatRoom chatRoom);
-
-    @Query("SELECT m FROM Message m WHERE m.chatRoom = :chatRoom ORDER BY m.sentAt DESC")
-    Page<Message> findByChatRoomOrderBySentAtDesc(@Param("chatRoom") ChatRoom chatRoom, Pageable pageable);
-
-    @Query("SELECT m FROM Message m WHERE m.chatRoom = :chatRoom AND m.sentAt > :after ORDER BY m.sentAt ASC")
-    List<Message> findByChatRoomAndSentAtAfter(@Param("chatRoom") ChatRoom chatRoom, @Param("after") LocalDateTime after);
-
-    Optional<Message> findTopByChatRoomOrderBySentAtDesc(ChatRoom chatRoom);
 
     /**
      * 채팅방 ID로 가장 최근 메시지 조회
@@ -59,18 +40,6 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
      * @return 해당 채팅방의 모든 메시지 목록 (오래된 순)
      */
     List<Message> findByChatRoom_ChatRoomIdOrderBySentAtAsc(Long chatRoomId);
-
-    /**
-     * 채팅방 ID로 메시지 조회 (최신순)
-     * 기존 테스트용 메서드 유지
-     */
-    List<Message> findByChatRoom_ChatRoomIdOrderBySentAtDesc(Long chatRoomId);
-
-    /**
-     * 전체 메시지 조회 (최신순)
-     * 기존 테스트용 메서드 유지
-     */
-    List<Message> findAllByOrderBySentAtDesc();
 
     /**
      * 여러 채팅방의 마지막 메시지를 한 번에 조회 (N+1 문제 해결)
