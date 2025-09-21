@@ -1,5 +1,6 @@
 package com.example.petner.domain.chat.controller;
 
+import com.example.petner.domain.chat.dto.request.ChatMessageRequestDto;
 import com.example.petner.domain.chat.dto.request.ChatRoomCreateRequestDto;
 import com.example.petner.domain.chat.dto.response.ChatRoomResponseDto;
 import com.example.petner.domain.chat.dto.response.ChatRoomListResponseDto;
@@ -7,6 +8,7 @@ import com.example.petner.domain.chat.dto.response.ChatMessageResponseDto;
 import com.example.petner.domain.chat.service.ChatRoomService;
 import com.example.petner.domain.chat.service.ChatRoomQueryService;
 import com.example.petner.domain.chat.service.ChatMessageService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "chats", description = "채팅 관련 API")
+@Tag(name = "채팅 (chats)", description = "채팅 관련 API")
 @RestController
 @RequestMapping("/api/v1/chat/rooms")
 @RequiredArgsConstructor
@@ -105,5 +107,24 @@ public class ChatRoomController {
     public ResponseEntity<List<ChatMessageResponseDto>> getAllChatRoomMessages(@PathVariable Long chatRoomId) {
         List<ChatMessageResponseDto> messages = chatMessageService.getAllChatRoomMessages(chatRoomId);
         return ResponseEntity.ok(messages);
+    }
+
+    @Operation(
+            summary = "[WS] 채팅 메시지 전송 (문서화용)",
+            description = """
+            ###  WebSocket STOMP 프로토콜을 통해 메시지를 전송합니다.
+            
+            - **구독(Subscribe) 주소**: `/topic/chat/{chatRoomId}`
+            - **발행(Publish) 주소**: `/app/chat/{chatRoomId}`
+            - **요청 본문 (Request Body)**: `ChatMessageRequestDto` 형식
+            
+            이 HTTP 엔드포인트는 호출할 수 없으며, 오직 WebSocket 명세 확인용입니다.
+            """
+    )
+    @PostMapping("/{chatRoomId}/messages/send-doc") // 문서화를 위한 가짜 경로
+    public ResponseEntity<Void> sendChatMessageForDocumentation(@PathVariable Long chatRoomId, @RequestBody ChatMessageRequestDto message) {
+        // 이 메소드는 Swagger 문서화를 위한 것이므로 실제 로직은 없습니다.
+        // 항상 405 Method Not Allowed를 반환하여 잘못된 사용을 방지합니다.
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).build();
     }
 }
