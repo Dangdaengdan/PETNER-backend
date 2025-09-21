@@ -58,4 +58,10 @@ public class Post {
     public void increaseViewCount() {
         this.viewCount++;
     }
+
+    public void update(String title, String content, String thumbImageUrl) {
+        this.title = title;
+        this.content = content;
+        this.thumbImageUrl = thumbImageUrl;
+    }
 }
