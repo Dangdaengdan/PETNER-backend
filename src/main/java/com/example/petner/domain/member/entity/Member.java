@@ -30,15 +30,15 @@ public class Member {
     @Column(name = "email", unique = true, length = 255)
     private String email;
 
-    @Column(name = "nickname", nullable = false, unique = true, length = 50)
+    @Column(name = "nickname", unique = true, length = 50)
     private String nickname;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "gender", nullable = false)
+    @Column(name = "gender")
     private Gender gender;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "housing_type", nullable = false)
+    @Column(name = "housing_type")
     private HousingType housingType;
 
     @CreationTimestamp
@@ -49,11 +49,11 @@ public class Member {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @Column(name = "contact", nullable = false, length = 200)
+    @Column(name = "contact", length = 200)
     private String contact;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "location_id", nullable = false)
+    @JoinColumn(name = "location_id")
     private Location location;
 
     @Builder
@@ -66,5 +66,26 @@ public class Member {
         this.housingType = housingType;
         this.contact = contact;
         this.location = location;
+    }
+    
+    /**
+     * 카카오 로그인용 임시 회원 생성
+     */
+    public static Member createTemporaryMember(String kakaoId) {
+        return Member.builder()
+                .kakaoId(kakaoId)
+                .build();
+    }
+    
+    /**
+     * 프로필 완성 여부 확인
+     */
+    public boolean isProfileComplete() {
+        return nickname != null 
+                && email != null 
+                && gender != null 
+                && housingType != null 
+                && contact != null 
+                && location != null;
     }
 }
