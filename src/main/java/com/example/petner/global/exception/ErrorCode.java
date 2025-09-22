@@ -35,6 +35,7 @@ public enum ErrorCode {
     /* 댓글 관련 */
     COMMENT_NOT_FOUND("404-CM01", "댓글을 찾을 수 없습니다", HttpStatus.NOT_FOUND),
     COMMENT_ACCESS_DENIED("403-CM02", "댓글에 대한 접근 권한이 없습니다", HttpStatus.FORBIDDEN),
+    COMMENT_POST_MISMATCH("400-CM03", "댓글과 게시글이 일치하지 않습니다", HttpStatus.BAD_REQUEST),
 
     /* 보호소 관련 */
     SHELTER_NOT_FOUND("404-SH01", "보호소 정보를 찾을 수 없습니다", HttpStatus.NOT_FOUND),
