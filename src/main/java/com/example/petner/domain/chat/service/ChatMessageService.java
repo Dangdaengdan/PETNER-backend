@@ -43,6 +43,7 @@ public class ChatMessageService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final MemberRepository memberRepository;
+    private final ChatRoomMemberManager memberManager;
 
     /**
      * 메시지 저장 처리 (WebSocket 컨트롤러용)
@@ -73,7 +74,7 @@ public class ChatMessageService {
             Member sender = validateSender(messageDto.getSenderId());
 
             // 3. 채팅방 참여자 권한 검증 및 나간 멤버 재입장 처리
-            validateChatRoomParticipantAndRejoinInactiveMembers(chatRoom, sender);
+            memberManager.validateAndReactivateMembers(chatRoom, sender);
 
             // 4. 메시지 엔티티 생성 및 저장
             Message message = createAndSaveMessage(chatRoom, sender, messageDto.getContent());
@@ -120,8 +121,8 @@ public class ChatMessageService {
         Pageable pageable = PageRequest.of(page, size,
                 Sort.by(Sort.Direction.ASC, "sentAt"));
 
-        // 3. 메시지 조회 및 DTO 변환
-        List<Message> messages = messageRepository.findByChatRoom_ChatRoomId(chatRoomId, pageable);
+        // 3. 메시지 조회 및 DTO 변환 (N+1 문제 해결)
+        List<Message> messages = messageRepository.findByChatRoomIdWithSender(chatRoomId, pageable);
 
         List<ChatMessageResponseDto> responseDtos = messages.stream()
                 .map(ChatMessageResponseDto::new)
@@ -143,8 +144,8 @@ public class ChatMessageService {
         // 1. 채팅방 존재 여부 검증
         validateChatRoomExists(chatRoomId);
 
-        // 2. 모든 메시지 조회 (시간순 정렬)
-        List<Message> messages = messageRepository.findByChatRoom_ChatRoomIdOrderBySentAtAsc(chatRoomId);
+        // 2. 모든 메시지 조회 (시간순 정렬, N+1 문제 해결)
+        List<Message> messages = messageRepository.findByChatRoomIdWithSenderOrderBySentAtAsc(chatRoomId);
 
         List<ChatMessageResponseDto> responseDtos = messages.stream()
                 .map(ChatMessageResponseDto::new)
@@ -182,8 +183,8 @@ public class ChatMessageService {
         // 4. 페이징 설정 (시간순 정렬)
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "sentAt"));
 
-        // 5. 메시지 조회 (페이징 적용)
-        List<Message> messages = messageRepository.findByChatRoom_ChatRoomId(chatRoomId, pageable);
+        // 5. 메시지 조회 (페이징 적용, N+1 문제 해결)
+        List<Message> messages = messageRepository.findByChatRoomIdWithSender(chatRoomId, pageable);
 
         // 6. 멤버가 볼 수 있는 메시지만 필터링
         List<ChatMessageResponseDto> visibleMessages = messages.stream()
@@ -218,8 +219,8 @@ public class ChatMessageService {
                 .findByChatRoomAndMember(chatRoom, member)
                 .orElseThrow(() -> new ChatException(ErrorCode.CHAT_UNAUTHORIZED_ACCESS));
 
-        // 4. 모든 메시지 조회 (시간순 정렬)
-        List<Message> allMessages = messageRepository.findByChatRoom_ChatRoomIdOrderBySentAtAsc(chatRoomId);
+        // 4. 모든 메시지 조회 (시간순 정렬, N+1 문제 해결)
+        List<Message> allMessages = messageRepository.findByChatRoomIdWithSenderOrderBySentAtAsc(chatRoomId);
 
         // 5. 멤버가 볼 수 있는 메시지만 필터링
         List<ChatMessageResponseDto> visibleMessages = allMessages.stream()
@@ -268,73 +269,6 @@ public class ChatMessageService {
                 .orElseThrow(() -> new ChatException(ErrorCode.CHAT_MEMBER_NOT_FOUND));
     }
 
-    /**
-     * 채팅방 참여자 권한 검증 및 나간 멤버 재입장 처리
-     *
-     * 동작 흐름:
-     * 1. 발신자가 채팅방의 멤버인지 확인 (활성/비활성 모두 포함)
-     * 2. 발신자가 비활성 상태라면 자동 재입장 처리
-     * 3. 상대방이 비활성 상태라면 자동 재입장 처리 (메시지를 받을 수 있도록)
-     *
-     * @param chatRoom 검증할 채팅방
-     * @param sender 검증할 발신자
-     * @throws ChatException 해당 채팅방의 멤버가 아닌 경우
-     */
-    private void validateChatRoomParticipantAndRejoinInactiveMembers(ChatRoom chatRoom, Member sender) {
-        // 1. 발신자가 이 채팅방의 멤버인지 확인 (활성/비활성 상관없이)
-        boolean isMember = chatRoom.getAllMembers().stream()
-                .anyMatch(chatRoomMember ->
-                    chatRoomMember.getMember().getMemberId().equals(sender.getMemberId()));
-
-        if (!isMember) {
-            log.warn("채팅방 접근 권한 없음 - 채팅방 ID: {}, 발신자 ID: {}",
-                    chatRoom.getChatRoomId(), sender.getMemberId());
-            throw new ChatException(ErrorCode.CHAT_UNAUTHORIZED_ACCESS);
-        }
-
-        // 2. 발신자가 비활성 상태라면 재입장 처리
-        boolean isSenderActive = chatRoomMemberRepository.existsActiveMemberInChatRoom(
-                chatRoom.getChatRoomId(), sender.getMemberId());
-
-        if (!isSenderActive) {
-            log.info("발신자 자동 재입장 처리 - 채팅방 ID: {}, 발신자 ID: {}",
-                    chatRoom.getChatRoomId(), sender.getMemberId());
-            rejoinMemberToChatRoom(chatRoom, sender);
-        }
-
-        // 3. 모든 멤버 중 비활성 상태인 멤버들을 재입장 처리 (메시지를 받을 수 있도록)
-        chatRoom.getAllMembers().stream()
-                .filter(chatRoomMember -> !chatRoomMember.isActive())
-                .forEach(inactiveMember -> {
-                    log.info("비활성 멤버 자동 재입장 처리 - 채팅방 ID: {}, 멤버 ID: {}",
-                            chatRoom.getChatRoomId(), inactiveMember.getMember().getMemberId());
-                    try {
-                        rejoinMemberToChatRoom(chatRoom, inactiveMember.getMember());
-                    } catch (Exception e) {
-                        log.warn("멤버 재입장 실패 - 채팅방 ID: {}, 멤버 ID: {}, 오류: {}",
-                                chatRoom.getChatRoomId(), inactiveMember.getMember().getMemberId(), e.getMessage());
-                    }
-                });
-    }
-
-    /**
-     * 멤버를 채팅방에 재입장시키는 메서드
-     *
-     * @param chatRoom 채팅방 엔티티
-     * @param member 재입장시킬 멤버
-     */
-    private void rejoinMemberToChatRoom(ChatRoom chatRoom, Member member) {
-        ChatRoomMember chatRoomMember = chatRoomMemberRepository
-                .findByChatRoomAndMember(chatRoom, member)
-                .orElseThrow(() -> new ChatException(ErrorCode.CHAT_MEMBER_NOT_FOUND));
-
-        // 멤버를 활성화
-        chatRoomMember.reactivate();
-        chatRoomMemberRepository.save(chatRoomMember);
-
-        log.info("멤버 재입장 완료 - 채팅방 ID: {}, 멤버 ID: {}",
-                chatRoom.getChatRoomId(), member.getMemberId());
-    }
 
     /**
      * 메시지 엔티티 생성 및 저장

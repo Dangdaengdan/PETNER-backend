@@ -33,6 +33,18 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findByChatRoom_ChatRoomId(Long chatRoomId, Pageable pageable);
 
     /**
+     * 채팅방 ID로 메시지 조회 (N+1 문제 해결용, FETCH JOIN 적용)
+     * @param chatRoomId 채팅방 ID
+     * @param pageable 페이징 정보
+     * @return 발신자 정보가 포함된 메시지 목록
+     */
+    @Query("SELECT m FROM Message m " +
+           "JOIN FETCH m.sender " +
+           "WHERE m.chatRoom.chatRoomId = :chatRoomId " +
+           "ORDER BY m.sentAt ASC")
+    List<Message> findByChatRoomIdWithSender(@Param("chatRoomId") Long chatRoomId, Pageable pageable);
+
+    /**
      * 채팅방 ID로 모든 메시지 조회 (시간순 정렬)
      * ERD Messages 테이블의 chatRoomId(FK) 기준 조회
      *
@@ -40,6 +52,17 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
      * @return 해당 채팅방의 모든 메시지 목록 (오래된 순)
      */
     List<Message> findByChatRoom_ChatRoomIdOrderBySentAtAsc(Long chatRoomId);
+
+    /**
+     * 채팅방 ID로 모든 메시지 조회 (N+1 문제 해결용, FETCH JOIN 적용)
+     * @param chatRoomId 채팅방 ID
+     * @return 발신자 정보가 포함된 모든 메시지 목록
+     */
+    @Query("SELECT m FROM Message m " +
+           "JOIN FETCH m.sender " +
+           "WHERE m.chatRoom.chatRoomId = :chatRoomId " +
+           "ORDER BY m.sentAt ASC")
+    List<Message> findByChatRoomIdWithSenderOrderBySentAtAsc(@Param("chatRoomId") Long chatRoomId);
 
     /**
      * 여러 채팅방의 마지막 메시지를 한 번에 조회 (N+1 문제 해결)
