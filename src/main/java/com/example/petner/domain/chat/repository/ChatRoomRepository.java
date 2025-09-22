@@ -29,7 +29,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     List<ChatRoom> findByDog(Dog dog);
 
     /**
-     * 특정 강아지와 관련된 채팅방 중에서 두 멤버가 참여한 채팅방 조회
+     * 특정 강아지와 관련된 채팅방 중에서 두 멤버가 참여한 채팅방 조회 (활성 멤버만)
      * ChatRoomMember를 통해 멤버 관계를 확인
      * @param dogId 강아지 ID
      * @param member1Id 첫 번째 멤버 ID
@@ -48,7 +48,26 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
                                                     @Param("member2Id") Long member2Id);
 
     /**
-     * 강아지 정보가 없는 채팅방 중에서 두 멤버가 참여한 채팅방 조회
+     * 특정 강아지와 관련된 채팅방 중에서 두 멤버가 참여한 채팅방 조회 (활성/비활성 무관)
+     * ChatRoomMember를 통해 멤버 관계를 확인
+     * @param dogId 강아지 ID
+     * @param member1Id 첫 번째 멤버 ID
+     * @param member2Id 두 번째 멤버 ID
+     * @return 조건에 맞는 채팅방
+     */
+    @Query("SELECT DISTINCT cr FROM ChatRoom cr " +
+           "JOIN cr.chatRoomMembers crm1 " +
+           "JOIN cr.chatRoomMembers crm2 " +
+           "WHERE cr.dog.dogId = :dogId " +
+           "AND crm1.member.memberId = :member1Id " +
+           "AND crm2.member.memberId = :member2Id " +
+           "AND crm1.id != crm2.id")
+    Optional<ChatRoom> findByDogAndTwoMembers(@Param("dogId") Long dogId,
+                                              @Param("member1Id") Long member1Id,
+                                              @Param("member2Id") Long member2Id);
+
+    /**
+     * 강아지 정보가 없는 채팅방 중에서 두 멤버가 참여한 채팅방 조회 (활성 멤버만)
      * @param member1Id 첫 번째 멤버 ID
      * @param member2Id 두 번째 멤버 ID
      * @return 조건에 맞는 채팅방
@@ -62,6 +81,22 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
            "AND crm1.id != crm2.id")
     Optional<ChatRoom> findByTwoActiveMembersAndNullDog(@Param("member1Id") Long member1Id,
                                                         @Param("member2Id") Long member2Id);
+
+    /**
+     * 강아지 정보가 없는 채팅방 중에서 두 멤버가 참여한 채팅방 조회 (활성/비활성 무관)
+     * @param member1Id 첫 번째 멤버 ID
+     * @param member2Id 두 번째 멤버 ID
+     * @return 조건에 맞는 채팅방
+     */
+    @Query("SELECT DISTINCT cr FROM ChatRoom cr " +
+           "JOIN cr.chatRoomMembers crm1 " +
+           "JOIN cr.chatRoomMembers crm2 " +
+           "WHERE cr.dog IS NULL " +
+           "AND crm1.member.memberId = :member1Id " +
+           "AND crm2.member.memberId = :member2Id " +
+           "AND crm1.id != crm2.id")
+    Optional<ChatRoom> findByTwoMembersAndNullDog(@Param("member1Id") Long member1Id,
+                                                  @Param("member2Id") Long member2Id);
 
     /**
      * 두 멤버가 공통으로 참여한 모든 활성 채팅방 조회 (강아지 정보 포함)

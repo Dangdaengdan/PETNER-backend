@@ -24,7 +24,7 @@ public class ChatRoomDuplicateChecker {
     private final ChatRoomRepository chatRoomRepository;
 
     /**
-     * 기존 채팅방 존재 여부 확인
+     * 기존 채팅방 존재 여부 확인 (활성/비활성 상관없이)
      * 강아지가 있는 경우와 없는 경우를 구분하여 적절한 중복 체크 수행
      *
      * @param dog 강아지 (nullable)
@@ -34,11 +34,11 @@ public class ChatRoomDuplicateChecker {
      */
     public Optional<ChatRoom> findExistingChatRoom(Dog dog, Long member1Id, Long member2Id) {
         if (dog != null) {
-            // 강아지가 지정된 경우: 동일한 강아지 + 두 멤버 조합 체크
-            return chatRoomRepository.findByDogAndTwoActiveMembers(dog.getDogId(), member1Id, member2Id);
+            // 강아지가 지정된 경우: 동일한 강아지 + 두 멤버 조합 체크 (활성/비활성 무관)
+            return chatRoomRepository.findByDogAndTwoMembers(dog.getDogId(), member1Id, member2Id);
         } else {
-            // 일반 채팅방인 경우: 강아지가 null이고 두 멤버가 같은 채팅방 체크
-            return chatRoomRepository.findByTwoActiveMembersAndNullDog(member1Id, member2Id);
+            // 일반 채팅방인 경우: 강아지가 null이고 두 멤버가 같은 채팅방 체크 (활성/비활성 무관)
+            return chatRoomRepository.findByTwoMembersAndNullDog(member1Id, member2Id);
         }
     }
 

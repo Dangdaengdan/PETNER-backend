@@ -84,6 +84,14 @@ public class ChatRoom {
     }
 
     /**
+     * 전체 채팅방 멤버 목록 조회 (활성/비활성 모두 포함)
+     * @return 전체 멤버 목록
+     */
+    public List<ChatRoomMember> getAllMembers() {
+        return new ArrayList<>(chatRoomMembers);
+    }
+
+    /**
      * 마지막 메시지 시간 업데이트
      */
     public void updateLastMessageTime() {

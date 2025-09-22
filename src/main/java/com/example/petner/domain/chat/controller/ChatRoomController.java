@@ -121,7 +121,7 @@ public class ChatRoomController {
     }
 
     /**
-     * 채팅방 나가기 API
+     *  채팅방 나가기 API
      * 실제 삭제가 아닌 비활성화 처리
      *
      * @param chatRoomId 나갈 채팅방 ID

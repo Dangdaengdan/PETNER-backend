@@ -64,8 +64,10 @@ public class ChatRoomService {
         );
 
         if (existingChatRoom.isPresent()) {
-            // 기존 채팅방이 있다면 그것을 반환 (중복 방지)
-            return new ChatRoomResponseDto(existingChatRoom.get());
+            // 기존 채팅방이 있다면 두 멤버를 모두 재활성화하고 반환
+            ChatRoom chatRoom = existingChatRoom.get();
+            reactivateMembersIfNeeded(chatRoom, member1, member2);
+            return new ChatRoomResponseDto(chatRoom);
         }
 
         // 4. 새로운 채팅방 생성
@@ -103,6 +105,40 @@ public class ChatRoomService {
 
         // 데이터베이스에 저장
         chatRoomMemberRepository.save(chatRoomMember);
+    }
+
+    /**
+     * 기존 채팅방의 멤버들을 필요시 재활성화
+     * 두 멤버 중 비활성화된 멤버가 있다면 재활성화
+     *
+     * @param chatRoom 기존 채팅방
+     * @param member1 첫 번째 멤버
+     * @param member2 두 번째 멤버
+     */
+    private void reactivateMembersIfNeeded(ChatRoom chatRoom, Member member1, Member member2) {
+        // 첫 번째 멤버 재활성화
+        reactivateMemberIfNeeded(chatRoom, member1);
+        // 두 번째 멤버 재활성화
+        reactivateMemberIfNeeded(chatRoom, member2);
+    }
+
+    /**
+     * 특정 멤버를 필요시 재활성화
+     *
+     * @param chatRoom 채팅방
+     * @param member 재활성화할 멤버
+     */
+    private void reactivateMemberIfNeeded(ChatRoom chatRoom, Member member) {
+        Optional<ChatRoomMember> existingMember = chatRoomMemberRepository
+                .findByChatRoomAndMember(chatRoom, member);
+
+        if (existingMember.isPresent()) {
+            // 기존 멤버가 있다면 재활성화
+            existingMember.get().reactivate();
+        } else {
+            // 기존 멤버가 없다면 새로 추가
+            createAndAddChatRoomMember(chatRoom, member);
+        }
     }
 
     /**
