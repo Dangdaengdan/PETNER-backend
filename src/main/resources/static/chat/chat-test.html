@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>채팅 기능 테스트 (ERD 기반)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        /* CSS는 변경 없음 */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; background-color: #f4f4f9; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .area { display: none; }
+        #login-area { display: block; }
+        h2, h3 { color: #333; }
+        input[type="text"], input[type="number"] { width: calc(100% - 22px); padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background-color: #5c67f2; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #4a54c4; }
+        #room-list div { padding: 10px; border: 1px solid #eee; border-radius: 4px; margin-top: 5px; cursor: pointer; }
+        #room-list div:hover { background-color: #f0f0f0; }
+        .room-title { font-weight: bold; margin-bottom: 4px; }
+        .room-last-message { font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        #messages { height: 300px; border: 1px solid #ddd; border-radius: 4px; padding: 10px; margin-bottom: 10px; overflow-y: auto; display: flex; flex-direction: column; }
+        .message { padding: 8px 12px; border-radius: 18px; margin-bottom: 8px; max-width: 70%; word-wrap: break-word; }
+        .sent { background-color: #5c67f2; color: white; align-self: flex-end; }
+        .received { background-color: #e5e5ea; color: black; align-self: flex-start; }
+        #chat-form { display: flex; }
+        #chat-form input { flex-grow: 1; margin-right: 10px; margin-bottom: 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="login-area" class="area">
+        <h2>로그인</h2>
+        <input type="number" id="memberId" placeholder="로그인할 Member ID를 입력하세요 (예: 1)">
+        <button onclick="login()">로그인</button>
+    </div>
+
+    <div id="room-list-area" class="area">
+        <h2 id="room-list-title"></h2>
+        <div id="room-list"></div>
+        <button onclick="logout()">로그아웃</button>
+    </div>
+
+    <div id="chat-area" class="area">
+        <h3 id="chat-with-title"></h3>
+        <div id="messages"></div>
+        <form id="chat-form" onsubmit="sendMessage(event)">
+            <input type="text" id="message-input" placeholder="메시지를 입력하세요..." autocomplete="off">
+            <button type="submit">전송</button>
+        </form>
+        <button onclick="goBackToRoomList()">뒤로가기</button>
+    </div>
+</div>
+
+<script>
+    const API_BASE_URL = "http://localhost:8080";
+    let currentMemberId = null;
+    let currentChatRoomId = null;
+    let stompClient = null;
+
+    function showArea(areaId) {
+        document.querySelectorAll('.area').forEach(area => area.style.display = 'none');
+        document.getElementById(areaId).style.display = 'block';
+    }
+
+    function login() {
+        const memberId = document.getElementById('memberId').value;
+        if (!memberId) { alert("Member ID를 입력하세요."); return; }
+        currentMemberId = parseInt(memberId, 10);
+        document.getElementById('room-list-title').innerText = `채팅 목록 (로그인: ${currentMemberId}번 유저)`;
+        showArea('room-list-area');
+        loadChatRooms();
+    }
+
+    function logout() {
+        if (stompClient) { stompClient.disconnect(); }
+        currentMemberId = null; currentChatRoomId = null; stompClient = null;
+        document.getElementById('memberId').value = '';
+        showArea('login-area');
+    }
+
+    async function loadChatRooms() {
+        const roomListDiv = document.getElementById('room-list');
+        roomListDiv.innerHTML = '채팅방을 불러오는 중...';
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/chat/rooms/members/${currentMemberId}`);
+            if (!response.ok) throw new Error('채팅방 목록을 불러오는데 실패했습니다.');
+            const rooms = await response.json();
+            roomListDiv.innerHTML = '';
+            if (rooms.length === 0) { roomListDiv.innerHTML = '참여중인 채팅방이 없습니다.'; return; }
+            rooms.forEach(room => {
+                const roomDiv = document.createElement('div');
+
+                // 채팅방 제목 생성
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'room-title';
+                let roomTitle = `${room.otherMemberInfo.nickname}님과의 대화`;
+                if (room.dogInfo && room.dogInfo.name) {
+                    roomTitle += ` (🐶 강아지: ${room.dogInfo.name})`;
+                } else {
+                    roomTitle += ` (일반 채팅)`;
+                }
+                titleDiv.innerText = roomTitle;
+
+                // 최근 메시지 생성
+                const lastMessageDiv = document.createElement('div');
+                lastMessageDiv.className = 'room-last-message';
+                if (room.lastMessageContent) {
+                    lastMessageDiv.innerText = room.lastMessageContent;
+                } else {
+                    lastMessageDiv.innerText = '아직 메시지가 없습니다';
+                }
+
+                roomDiv.appendChild(titleDiv);
+                roomDiv.appendChild(lastMessageDiv);
+                roomDiv.onclick = () => enterChatRoom(room.chatRoomId, room.otherMemberInfo.nickname);
+                roomListDiv.appendChild(roomDiv);
+            });
+        } catch (error) { roomListDiv.innerHTML = error.message; }
+    }
+
+    function goBackToRoomList() {
+        if(stompClient) { stompClient.disconnect(); stompClient = null; }
+        showArea('room-list-area');
+        loadChatRooms();
+    }
+
+    async function enterChatRoom(chatRoomId, otherNickname) {
+        currentChatRoomId = chatRoomId;
+        document.getElementById('chat-with-title').innerText = `${otherNickname}님과의 채팅`;
+        showArea('chat-area');
+        const messagesDiv = document.getElementById('messages');
+        messagesDiv.innerHTML = '';
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/chat/rooms/${chatRoomId}/messages/all`);
+            const messages = await response.json();
+            messages.forEach(displayMessage); // ERD에 맞춘 응답 필드를 사용
+        } catch (error) { displayMessage({ content: "대화 내역을 불러오는데 실패했습니다." }); }
+        connectAndSubscribe();
+    }
+
+    function connectAndSubscribe() {
+        if (stompClient) { stompClient.disconnect(); }
+        const socket = new SockJS(`${API_BASE_URL}/ws-stomp`);
+        stompClient = Stomp.over(socket);
+        stompClient.connect({}, (frame) => {
+            stompClient.subscribe(`/topic/chat/${currentChatRoomId}`, (message) => {
+                displayMessage(JSON.parse(message.body));
+            });
+        });
+    }
+
+    function sendMessage(event) {
+        event.preventDefault();
+        const messageInput = document.getElementById('message-input');
+        const content = messageInput.value.trim();
+        if (content && stompClient) {
+            const chatMessage = { senderId: currentMemberId, content: content };
+            stompClient.send(`/app/chat/${currentChatRoomId}`, {}, JSON.stringify(chatMessage));
+            messageInput.value = '';
+        }
+    }
+
+    function displayMessage(message) {
+        const messagesDiv = document.getElementById('messages');
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message');
+        // `Messages` 테이블의 `content` 컬럼을 사용
+        messageElement.innerText = message.content;
+        // `Messages` 테이블의 `senderId` 컬럼을 사용
+        if (message.senderId === currentMemberId) {
+            messageElement.classList.add('sent');
+        } else {
+            messageElement.classList.add('received');
+        }
+        messagesDiv.appendChild(messageElement);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+</script>
+</body>
+</html>

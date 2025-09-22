@@ -4,6 +4,7 @@
 CREATE TABLE chat_rooms (
     chat_room_id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     dog_id BIGINT,
     member_id1 BIGINT NOT NULL,
     member_id2 BIGINT NOT NULL,

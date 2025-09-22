@@ -15,7 +15,7 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(authorize -> authorize
                 // Swagger UI 관련 경로 허용
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/ws-stomp/**"  ).permitAll()
                 .anyRequest().authenticated()
             )
             .csrf(csrf -> csrf.disable());
