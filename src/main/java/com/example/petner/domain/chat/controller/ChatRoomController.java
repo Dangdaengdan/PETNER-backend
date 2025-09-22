@@ -5,6 +5,8 @@ import com.example.petner.domain.chat.dto.request.ChatRoomCreateRequestDto;
 import com.example.petner.domain.chat.dto.response.ChatRoomResponseDto;
 import com.example.petner.domain.chat.dto.response.ChatRoomListResponseDto;
 import com.example.petner.domain.chat.dto.response.ChatMessageResponseDto;
+import com.example.petner.domain.chat.dto.response.ChatRoomMemberCountResponseDto;
+import com.example.petner.domain.chat.dto.response.ChatRoomActionResponseDto;
 import com.example.petner.domain.chat.service.ChatRoomService;
 import com.example.petner.domain.chat.service.ChatRoomQueryService;
 import com.example.petner.domain.chat.service.ChatMessageService;
@@ -129,9 +131,10 @@ public class ChatRoomController {
     @DeleteMapping("/{chatRoomId}/members/{memberId}")
     @Operation(summary = "채팅방 나가기", description = "채팅방에서 나갑니다 (비활성화 처리)")
     @ApiResponse(responseCode = "200", description = "채팅방 나가기 성공")
-    public ResponseEntity<Void> leaveChatRoom(@PathVariable Long chatRoomId, @PathVariable Long memberId) {
+    public ResponseEntity<ChatRoomActionResponseDto> leaveChatRoom(@PathVariable Long chatRoomId, @PathVariable Long memberId) {
         chatRoomService.leaveChatRoom(chatRoomId, memberId);
-        return ResponseEntity.ok().build();
+        ChatRoomActionResponseDto responseDto = new ChatRoomActionResponseDto(chatRoomId, memberId, "채팅방 나가기 성공");
+        return ResponseEntity.ok(responseDto);
     }
 
     /**
@@ -145,9 +148,10 @@ public class ChatRoomController {
     @PutMapping("/{chatRoomId}/members/{memberId}/rejoin")
     @Operation(summary = "채팅방 재입장", description = "나간 채팅방에 다시 입장합니다")
     @ApiResponse(responseCode = "200", description = "채팅방 재입장 성공")
-    public ResponseEntity<Void> rejoinChatRoom(@PathVariable Long chatRoomId, @PathVariable Long memberId) {
+    public ResponseEntity<ChatRoomActionResponseDto> rejoinChatRoom(@PathVariable Long chatRoomId, @PathVariable Long memberId) {
         chatRoomService.rejoinChatRoom(chatRoomId, memberId);
-        return ResponseEntity.ok().build();
+        ChatRoomActionResponseDto responseDto = new ChatRoomActionResponseDto(chatRoomId, memberId, "채팅방 재입장 성공");
+        return ResponseEntity.ok(responseDto);
     }
 
     /**
@@ -160,9 +164,10 @@ public class ChatRoomController {
     @GetMapping("/{chatRoomId}/members/count")
     @Operation(summary = "채팅방 활성 멤버 수 조회", description = "채팅방의 활성 멤버 수를 조회합니다")
     @ApiResponse(responseCode = "200", description = "활성 멤버 수 조회 성공")
-    public ResponseEntity<Long> getActiveMemberCount(@PathVariable Long chatRoomId) {
+    public ResponseEntity<ChatRoomMemberCountResponseDto> getActiveMemberCount(@PathVariable Long chatRoomId) {
         long count = chatRoomQueryService.getActiveMemberCount(chatRoomId);
-        return ResponseEntity.ok(count);
+        ChatRoomMemberCountResponseDto responseDto = new ChatRoomMemberCountResponseDto(chatRoomId, count);
+        return ResponseEntity.ok(responseDto);
     }
 
     @Operation(
