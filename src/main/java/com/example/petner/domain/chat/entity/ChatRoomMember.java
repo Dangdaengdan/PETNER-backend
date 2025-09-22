@@ -52,11 +52,20 @@ public class ChatRoomMember {
     @Column(name = "exited_at")
     private LocalDateTime exitedAt;
 
+    /**
+     * 채팅방에 (재)입장한 시간
+     * 채팅방 생성 시점 또는 재입장 시점으로 설정
+     * 이 시간 이전의 메시지는 보이지 않음
+     */
+    @Column(name = "joined_at")
+    private LocalDateTime joinedAt;
+
     @Builder
     public ChatRoomMember(ChatRoom chatRoom, Member member, Boolean isActive) {
         this.chatRoom = chatRoom;
         this.member = member;
         this.isActive = isActive != null ? isActive : true;
+        this.joinedAt = LocalDateTime.now(); // 생성 시점을 입장 시간으로 설정
     }
 
     /**
@@ -79,10 +88,12 @@ public class ChatRoomMember {
     /**
      * 채팅방 재활성화 (재입장)
      * 기존 멤버가 채팅방에 다시 참여할 때 사용
+     * 재입장 시점을 기록하여 이전 메시지 가시성 제어
      */
     public void reactivate() {
         this.isActive = true;
         this.exitedAt = null;
+        this.joinedAt = LocalDateTime.now(); // 재입장 시간 업데이트
     }
 
     /**
@@ -100,5 +111,26 @@ public class ChatRoomMember {
      */
     public boolean hasExitedAfter(LocalDateTime messageTime) {
         return exitedAt != null && exitedAt.isAfter(messageTime);
+    }
+
+    /**
+     * 멤버에게 특정 메시지가 보여야 하는지 확인
+     * 입장 시간 이후이고 나가기 전(또는 나간 적 없음)의 메시지만 보임
+     *
+     * @param messageTime 확인할 메시지 시간
+     * @return 메시지 가시성 여부
+     */
+    public boolean canSeeMessage(LocalDateTime messageTime) {
+        // 입장 시간 이전의 메시지는 보이지 않음
+        if (joinedAt != null && messageTime.isBefore(joinedAt)) {
+            return false;
+        }
+
+        // 나간 시간 이후의 메시지는 보이지 않음
+        if (exitedAt != null && messageTime.isAfter(exitedAt)) {
+            return false;
+        }
+
+        return true;
     }
 }
