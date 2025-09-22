@@ -11,6 +11,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "comments")
@@ -52,5 +54,13 @@ public class Comment {
         this.post = post;
         this.member = member;
         this.parentComment = parentComment;
+    }
+
+    public void update(String content) {
+        this.content = content;
+    }
+
+    public boolean isReply() {
+        return this.parentComment != null;
     }
 }
