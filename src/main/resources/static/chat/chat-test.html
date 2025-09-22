@@ -345,6 +345,7 @@
 
         const socket = new SockJS(`${API_BASE_URL}/ws-stomp`);
         stompClient = Stomp.over(socket);
+        stompClient.debug = null; // STOMP 디버깅 메시지 비활성화
 
         stompClient.connect({}, (frame) => {
             console.log('WebSocket 연결됨:', frame);
