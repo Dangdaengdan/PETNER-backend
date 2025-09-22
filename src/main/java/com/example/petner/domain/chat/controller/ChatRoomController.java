@@ -9,6 +9,7 @@ import com.example.petner.domain.chat.service.ChatRoomService;
 import com.example.petner.domain.chat.service.ChatRoomQueryService;
 import com.example.petner.domain.chat.service.ChatMessageService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -40,6 +41,8 @@ public class ChatRoomController {
      * 4. 기존 채팅방이 있으면 그것을 반환, 없으면 새로 생성
      */
     @PostMapping("")
+    @Operation(summary = "채팅방 생성", description = "새로운 채팅방을 생성합니다.")
+    @ApiResponse(responseCode = "201", description = "채팅방 생성 성공")
     public ResponseEntity<ChatRoomResponseDto> createChatRoom(@RequestBody ChatRoomCreateRequestDto requestDto) {
         // 채팅방 생성 또는 기존 채팅방 반환
         ChatRoomResponseDto responseDto = chatRoomService.createChatRoom(requestDto);
@@ -59,6 +62,8 @@ public class ChatRoomController {
      * 4. N+1 문제 방지를 위한 효율적인 조회 수행
      */
     @GetMapping("/members/{memberId}")
+    @Operation(summary = "사용자의 채팅방 목록 조회", description = "사용자의 채팅방 목록을 조회합니다")
+    @ApiResponse(responseCode = "201", description = "채팅방 목록 조회 성공")
     public ResponseEntity<List<ChatRoomListResponseDto>> getMemberChatRooms(@PathVariable Long memberId) {
         List<ChatRoomListResponseDto> chatRooms = chatRoomQueryService.getMemberChatRooms(memberId);
         return ResponseEntity.ok(chatRooms);
@@ -85,6 +90,8 @@ public class ChatRoomController {
      * 4. ERD 컬럼명에 맞춘 응답 DTO 반환
      */
     @GetMapping("/{chatRoomId}/messages")
+    @Operation(summary = "특정 채팅방의 메시지 내역 조회(페이징 o)", description = "특정 채팅방의 메시지 내역을 조회합니다")
+    @ApiResponse(responseCode = "201", description = "채팅방 메시지 내역 조회 성공")
     public ResponseEntity<List<ChatMessageResponseDto>> getChatRoomMessages(
             @PathVariable Long chatRoomId,
             @RequestParam(defaultValue = "0") int page,
@@ -104,6 +111,8 @@ public class ChatRoomController {
      * @return 채팅방 전체 메시지 목록 (200 OK)
      */
     @GetMapping("/{chatRoomId}/messages/all")
+    @Operation(summary = "특정 채팅방의 메시지 내역 전체 조회(페이징 x)", description = "특정 채팅방의 메시지 내역을 전체 조회합니다")
+    @ApiResponse(responseCode = "201", description = "채팅방 메시지 내역 전체 조회 성공")
     public ResponseEntity<List<ChatMessageResponseDto>> getAllChatRoomMessages(@PathVariable Long chatRoomId) {
         List<ChatMessageResponseDto> messages = chatMessageService.getAllChatRoomMessages(chatRoomId);
         return ResponseEntity.ok(messages);
