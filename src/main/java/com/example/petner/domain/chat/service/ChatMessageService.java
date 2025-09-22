@@ -155,6 +155,84 @@ public class ChatMessageService {
     }
 
     /**
+     * 특정 채팅방의 멤버별 가시 메시지 조회 (페이징)
+     * 멤버의 입장/나가기 이력에 따라 볼 수 있는 메시지만 필터링
+     *
+     * @param chatRoomId 채팅방 고유 식별자
+     * @param memberId 조회 요청하는 멤버 ID
+     * @param page 페이지 번호 (0부터 시작)
+     * @param size 페이지 크기
+     * @return 해당 멤버가 볼 수 있는 메시지 응답 DTO 리스트
+     */
+    public List<ChatMessageResponseDto> getVisibleMessagesForMember(Long chatRoomId, Long memberId, int page, int size) {
+        log.info("멤버별 가시 메시지 조회 (페이징) - 채팅방 ID: {}, 멤버 ID: {}, 페이지: {}, 크기: {}",
+                chatRoomId, memberId, page, size);
+
+        // 1. 채팅방 존재 여부 검증
+        ChatRoom chatRoom = validateChatRoom(chatRoomId);
+
+        // 2. 멤버 검증
+        Member member = validateSender(memberId);
+
+        // 3. 멤버의 채팅방 참여 이력 조회
+        ChatRoomMember chatRoomMember = chatRoomMemberRepository
+                .findByChatRoomAndMember(chatRoom, member)
+                .orElseThrow(() -> new ChatException(ErrorCode.CHAT_UNAUTHORIZED_ACCESS));
+
+        // 4. 페이징 설정 (시간순 정렬)
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "sentAt"));
+
+        // 5. 메시지 조회 (페이징 적용)
+        List<Message> messages = messageRepository.findByChatRoom_ChatRoomId(chatRoomId, pageable);
+
+        // 6. 멤버가 볼 수 있는 메시지만 필터링
+        List<ChatMessageResponseDto> visibleMessages = messages.stream()
+                .filter(message -> chatRoomMember.canSeeMessage(message.getSentAt()))
+                .map(ChatMessageResponseDto::new)
+                .toList();
+
+        log.info("멤버별 가시 메시지 조회 완료 (페이징) - 조회: {}, 가시: {} 개 메시지",
+                messages.size(), visibleMessages.size());
+        return visibleMessages;
+    }
+
+    /**
+     * 특정 채팅방의 멤버별 가시 메시지 조회 (페이징 없음)
+     * 멤버의 입장/나가기 이력에 따라 볼 수 있는 메시지만 필터링
+     *
+     * @param chatRoomId 채팅방 고유 식별자
+     * @param memberId 조회 요청하는 멤버 ID
+     * @return 해당 멤버가 볼 수 있는 메시지 응답 DTO 리스트
+     */
+    public List<ChatMessageResponseDto> getVisibleMessagesForMember(Long chatRoomId, Long memberId) {
+        log.info("멤버별 가시 메시지 조회 - 채팅방 ID: {}, 멤버 ID: {}", chatRoomId, memberId);
+
+        // 1. 채팅방 존재 여부 검증
+        ChatRoom chatRoom = validateChatRoom(chatRoomId);
+
+        // 2. 멤버 검증
+        Member member = validateSender(memberId);
+
+        // 3. 멤버의 채팅방 참여 이력 조회
+        ChatRoomMember chatRoomMember = chatRoomMemberRepository
+                .findByChatRoomAndMember(chatRoom, member)
+                .orElseThrow(() -> new ChatException(ErrorCode.CHAT_UNAUTHORIZED_ACCESS));
+
+        // 4. 모든 메시지 조회 (시간순 정렬)
+        List<Message> allMessages = messageRepository.findByChatRoom_ChatRoomIdOrderBySentAtAsc(chatRoomId);
+
+        // 5. 멤버가 볼 수 있는 메시지만 필터링
+        List<ChatMessageResponseDto> visibleMessages = allMessages.stream()
+                .filter(message -> chatRoomMember.canSeeMessage(message.getSentAt()))
+                .map(ChatMessageResponseDto::new)
+                .toList();
+
+        log.info("멤버별 가시 메시지 조회 완료 - 전체: {}, 가시: {} 개 메시지",
+                allMessages.size(), visibleMessages.size());
+        return visibleMessages;
+    }
+
+    /**
      * 채팅방 존재 여부 검증 (조회용)
      *
      * @param chatRoomId 검증할 채팅방 ID

@@ -113,10 +113,54 @@ public class ChatRoomController {
      * @return 채팅방 전체 메시지 목록 (200 OK)
      */
     @GetMapping("/{chatRoomId}/messages/all")
-    @Operation(summary = "특정 채팅방의 메시지 내역 전체 조회(페이징 x)", description = "특정 채팅방의 메시지 내역을 전체 조회합니다")
+    @Operation(summary = "특정 채팅방의 메시지 내역 전체 조회(페이징 x)", description = "특정 채팅방의 메시지 내역을 전체 조회합니다(디버깅용)")
     @ApiResponse(responseCode = "201", description = "채팅방 메시지 내역 전체 조회 성공")
     public ResponseEntity<List<ChatMessageResponseDto>> getAllChatRoomMessages(@PathVariable Long chatRoomId) {
         List<ChatMessageResponseDto> messages = chatMessageService.getAllChatRoomMessages(chatRoomId);
+        return ResponseEntity.ok(messages);
+    }
+
+    /**
+     * 특정 채팅방의 멤버별 가시 메시지 조회 API (페이징)
+     *
+     * 멤버의 입장/나가기 이력에 따라 볼 수 있는 메시지만 반환
+     * 성능 최적화를 위한 페이징 지원
+     *
+     * @param chatRoomId 조회할 채팅방 ID
+     * @param memberId 조회 요청하는 멤버 ID
+     * @param page 페이지 번호 (선택, 기본값: 0)
+     * @param size 페이지 크기 (선택, 기본값: 50)
+     * @return 해당 멤버가 볼 수 있는 메시지 목록 (200 OK)
+     */
+    @GetMapping("/{chatRoomId}/messages/visible")
+    @Operation(summary = "멤버별 가시 메시지 조회 (페이징 o)", description = "멤버의 참여 이력에 따른 가시 메시지만 조회합니다 (페이징 지원)")
+    @ApiResponse(responseCode = "200", description = "가시 메시지 조회 성공")
+    public ResponseEntity<List<ChatMessageResponseDto>> getVisibleMessagesForMember(
+            @PathVariable Long chatRoomId,
+            @RequestParam Long memberId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        List<ChatMessageResponseDto> messages = chatMessageService.getVisibleMessagesForMember(chatRoomId, memberId, page, size);
+        return ResponseEntity.ok(messages);
+    }
+
+    /**
+     * 특정 채팅방의 멤버별 가시 메시지 전체 조회 API (페이징 없음)
+     *
+     * 멤버의 입장/나가기 이력에 따라 볼 수 있는 메시지만 반환
+     * HTML 클라이언트에서 사용할 엔드포인트 (현재 사용중)
+     *
+     * @param chatRoomId 조회할 채팅방 ID
+     * @param memberId 조회 요청하는 멤버 ID
+     * @return 해당 멤버가 볼 수 있는 메시지 목록 (200 OK)
+     */
+    @GetMapping("/{chatRoomId}/messages/visible/all")
+    @Operation(summary = "멤버별 가시 메시지 전체 조회(페이징 x)", description = "멤버의 참여 이력에 따른 가시 메시지를 전체 조회합니다")
+    @ApiResponse(responseCode = "200", description = "가시 메시지 전체 조회 성공")
+    public ResponseEntity<List<ChatMessageResponseDto>> getAllVisibleMessagesForMember(
+            @PathVariable Long chatRoomId,
+            @RequestParam Long memberId) {
+        List<ChatMessageResponseDto> messages = chatMessageService.getVisibleMessagesForMember(chatRoomId, memberId);
         return ResponseEntity.ok(messages);
     }
 
