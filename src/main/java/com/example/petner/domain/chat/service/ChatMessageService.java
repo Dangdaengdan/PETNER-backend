@@ -189,14 +189,18 @@ public class ChatMessageService {
 
     /**
      * 채팅방 참여자 권한 검증
+     * ChatRoomMember를 통해 활성 멤버인지 확인
      *
      * @param chatRoom 검증할 채팅방
      * @param sender 검증할 발신자
-     * @throws ChatException 해당 채팅방의 참여자가 아닌 경우
+     * @throws ChatException 해당 채팅방의 활성 참여자가 아닌 경우
      */
     private void validateChatRoomParticipant(ChatRoom chatRoom, Member sender) {
-        if (!chatRoom.getMember1().getMemberId().equals(sender.getMemberId()) &&
-            !chatRoom.getMember2().getMemberId().equals(sender.getMemberId())) {
+        boolean isActiveMember = chatRoom.getActiveMembers().stream()
+                .anyMatch(chatRoomMember ->
+                    chatRoomMember.getMember().getMemberId().equals(sender.getMemberId()));
+
+        if (!isActiveMember) {
             throw new ChatException(ErrorCode.CHAT_UNAUTHORIZED_ACCESS);
         }
     }

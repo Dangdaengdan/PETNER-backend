@@ -80,9 +80,20 @@ public class ChatRoomDtoConverter {
         );
     }
 
+    /**
+     * 현재 사용자가 아닌 다른 멤버 찾기
+     * ChatRoomMember를 통해 활성 상태의 다른 멤버를 조회
+     *
+     * @param chatRoom 채팅방
+     * @param currentMemberId 현재 사용자 ID
+     * @return 다른 멤버 정보
+     */
     private Member determineOtherMember(ChatRoom chatRoom, Long currentMemberId) {
-        return chatRoom.getMember1().getMemberId().equals(currentMemberId)
-                ? chatRoom.getMember2() : chatRoom.getMember1();
+        return chatRoom.getActiveMembers().stream()
+                .map(chatRoomMember -> chatRoomMember.getMember())
+                .filter(member -> !member.getMemberId().equals(currentMemberId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("채팅방에 다른 활성 멤버가 없습니다."));
     }
 
     private ChatRoomListResponseDto.DogInfo createDogInfo(ChatRoom chatRoom) {

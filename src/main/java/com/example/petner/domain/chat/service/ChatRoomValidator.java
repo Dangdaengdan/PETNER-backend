@@ -38,6 +38,17 @@ public class  ChatRoomValidator {
     }
 
     /**
+     * 단일 멤버 존재 여부 검증
+     *
+     * @param memberId 멤버 ID
+     * @return 검증된 멤버
+     */
+    public Member validateAndGetMember(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new ChatException(ErrorCode.CHAT_MEMBER_NOT_FOUND));
+    }
+
+    /**
      * 강아지 존재 여부 검증 및 소유자 검증
      *
      * @param dogId 강아지 ID (nullable)

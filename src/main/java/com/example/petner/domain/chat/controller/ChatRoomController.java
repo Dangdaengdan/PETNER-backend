@@ -118,15 +118,62 @@ public class ChatRoomController {
         return ResponseEntity.ok(messages);
     }
 
+    /**
+     * 채팅방 나가기 API
+     * 실제 삭제가 아닌 비활성화 처리
+     *
+     * @param chatRoomId 나갈 채팅방 ID
+     * @param memberId 나갈 멤버 ID
+     * @return 처리 결과 (200 OK)
+     */
+    @DeleteMapping("/{chatRoomId}/members/{memberId}")
+    @Operation(summary = "채팅방 나가기", description = "채팅방에서 나갑니다 (비활성화 처리)")
+    @ApiResponse(responseCode = "200", description = "채팅방 나가기 성공")
+    public ResponseEntity<Void> leaveChatRoom(@PathVariable Long chatRoomId, @PathVariable Long memberId) {
+        chatRoomService.leaveChatRoom(chatRoomId, memberId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 채팅방 재입장 API
+     * 비활성화된 멤버를 다시 활성화
+     *
+     * @param chatRoomId 재입장할 채팅방 ID
+     * @param memberId 재입장할 멤버 ID
+     * @return 처리 결과 (200 OK)
+     */
+    @PutMapping("/{chatRoomId}/members/{memberId}/rejoin")
+    @Operation(summary = "채팅방 재입장", description = "나간 채팅방에 다시 입장합니다")
+    @ApiResponse(responseCode = "200", description = "채팅방 재입장 성공")
+    public ResponseEntity<Void> rejoinChatRoom(@PathVariable Long chatRoomId, @PathVariable Long memberId) {
+        chatRoomService.rejoinChatRoom(chatRoomId, memberId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 채팅방 활성 멤버 수 조회 API
+     * 채팅방 관리 및 통계 정보 제공
+     *
+     * @param chatRoomId 조회할 채팅방 ID
+     * @return 활성 멤버 수 (200 OK)
+     */
+    @GetMapping("/{chatRoomId}/members/count")
+    @Operation(summary = "채팅방 활성 멤버 수 조회", description = "채팅방의 활성 멤버 수를 조회합니다")
+    @ApiResponse(responseCode = "200", description = "활성 멤버 수 조회 성공")
+    public ResponseEntity<Long> getActiveMemberCount(@PathVariable Long chatRoomId) {
+        long count = chatRoomQueryService.getActiveMemberCount(chatRoomId);
+        return ResponseEntity.ok(count);
+    }
+
     @Operation(
             summary = "[WS] 채팅 메시지 전송 (문서화용)",
             description = """
             ###  WebSocket STOMP 프로토콜을 통해 메시지를 전송합니다.
-            
+
             - **구독(Subscribe) 주소**: `/topic/chat/{chatRoomId}`
             - **발행(Publish) 주소**: `/app/chat/{chatRoomId}`
             - **요청 본문 (Request Body)**: `ChatMessageRequestDto` 형식
-            
+
             이 HTTP 엔드포인트는 호출할 수 없으며, 오직 WebSocket 명세 확인용입니다.
             """
     )

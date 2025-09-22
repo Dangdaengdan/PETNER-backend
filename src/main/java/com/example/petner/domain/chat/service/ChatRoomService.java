@@ -3,7 +3,9 @@ package com.example.petner.domain.chat.service;
 import com.example.petner.domain.chat.dto.request.ChatRoomCreateRequestDto;
 import com.example.petner.domain.chat.dto.response.ChatRoomResponseDto;
 import com.example.petner.domain.chat.entity.ChatRoom;
+import com.example.petner.domain.chat.entity.ChatRoomMember;
 import com.example.petner.domain.chat.repository.ChatRoomRepository;
+import com.example.petner.domain.chat.repository.ChatRoomMemberRepository;
 import com.example.petner.domain.dog.entity.Dog;
 import com.example.petner.domain.member.entity.Member;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,11 @@ import java.util.Optional;
 /**
  * 채팅방 생성 전용 서비스
  * Single Responsibility Principle을 적용하여 생성 책임만 담당
+ *
+ * 변경사항:
+ * - ChatRoomMember 엔티티를 통한 멤버 관리
+ * - 채팅방 생성 시 ChatRoomMember 레코드도 함께 생성
+ * - 트랜잭션 내에서 양방향 관계 설정
  */
 @Service
 @RequiredArgsConstructor
@@ -22,6 +29,7 @@ import java.util.Optional;
 public class ChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ChatRoomValidator chatRoomValidator;
     private final ChatRoomDuplicateChecker duplicateChecker;
 
@@ -35,7 +43,7 @@ public class ChatRoomService {
      * 1. 입력 검증: member1Id, member2Id로 멤버 존재 여부 확인
      * 2. 강아지 검증: dogId가 있다면 해당 강아지 존재 여부 및 소유자 확인
      * 3. 중복 체크: 동일한 두 멤버 간 기존 채팅방 존재 여부 확인
-     * 4. 채팅방 처리: 기존 채팅방이 있으면 반환, 없으면 새로 생성
+     * 4. 채팅방 처리: 기존 채팅방이 있으면 반환, 없으면 새로 생성 및 멤버 추가
      */
     @Transactional
     public ChatRoomResponseDto createChatRoom(ChatRoomCreateRequestDto requestDto) {
@@ -51,7 +59,9 @@ public class ChatRoomService {
         Dog dog = chatRoomValidator.validateAndGetDog(requestDto.getDogId(), member1, member2);
 
         // 3. 중복 채팅방 체크
-        Optional<ChatRoom> existingChatRoom = duplicateChecker.findExistingChatRoom(dog, member1, member2);
+        Optional<ChatRoom> existingChatRoom = duplicateChecker.findExistingChatRoom(
+                dog, member1.getMemberId(), member2.getMemberId()
+        );
 
         if (existingChatRoom.isPresent()) {
             // 기존 채팅방이 있다면 그것을 반환 (중복 방지)
@@ -60,16 +70,84 @@ public class ChatRoomService {
 
         // 4. 새로운 채팅방 생성
         ChatRoom chatRoom = ChatRoom.builder()
-                .dog(dog)                // 강아지 정보 (선택적)
-                .member1(member1)        // 첫 번째 멤버
-                .member2(member2)        // 두 번째 멤버
+                .dog(dog)  // 강아지 정보 (선택적)
                 .build();
 
         // 5. 데이터베이스에 저장
         ChatRoom savedChatRoom = chatRoomRepository.save(chatRoom);
 
-        // 6. 응답 DTO로 변환하여 반환
+        // 6. 채팅방 멤버 추가
+        createAndAddChatRoomMember(savedChatRoom, member1);
+        createAndAddChatRoomMember(savedChatRoom, member2);
+
+        // 7. 응답 DTO로 변환하여 반환
         return new ChatRoomResponseDto(savedChatRoom);
     }
 
+    /**
+     * 채팅방에 멤버 추가
+     * 양방향 관계를 안전하게 설정하여 데이터 일관성 보장
+     *
+     * @param chatRoom 채팅방
+     * @param member 추가할 멤버
+     */
+    private void createAndAddChatRoomMember(ChatRoom chatRoom, Member member) {
+        ChatRoomMember chatRoomMember = ChatRoomMember.builder()
+                .chatRoom(chatRoom)
+                .member(member)
+                .isActive(true)
+                .build();
+
+        // 양방향 관계 설정
+        chatRoom.addMember(chatRoomMember);
+
+        // 데이터베이스에 저장
+        chatRoomMemberRepository.save(chatRoomMember);
+    }
+
+    /**
+     * 채팅방 나가기
+     * 실제 삭제가 아닌 비활성화 처리
+     *
+     * @param chatRoomId 채팅방 ID
+     * @param memberId 나갈 멤버 ID
+     */
+    @Transactional
+    public void leaveChatRoom(Long chatRoomId, Long memberId) {
+        // 1. 채팅방 조회
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+
+        // 2. 멤버 비활성화
+        chatRoom.removeMember(memberId);
+    }
+
+    /**
+     * 채팅방 재입장
+     * 비활성화된 멤버를 다시 활성화
+     *
+     * @param chatRoomId 채팅방 ID
+     * @param memberId 재입장할 멤버 ID
+     */
+    @Transactional
+    public void rejoinChatRoom(Long chatRoomId, Long memberId) {
+        // 1. 채팅방 조회
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+
+        // 2. 멤버 조회
+        Member member = chatRoomValidator.validateAndGetMember(memberId);
+
+        // 3. 기존 ChatRoomMember 조회
+        Optional<ChatRoomMember> existingMember = chatRoomMemberRepository
+                .findByChatRoomAndMember(chatRoom, member);
+
+        if (existingMember.isPresent()) {
+            // 기존 멤버 재활성화
+            existingMember.get().reactivate();
+        } else {
+            // 새로운 멤버 추가
+            createAndAddChatRoomMember(chatRoom, member);
+        }
+    }
 }
