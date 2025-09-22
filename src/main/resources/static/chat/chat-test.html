@@ -305,7 +305,8 @@
         messagesDiv.innerHTML = '<div class="alert alert-info">메시지를 불러오는 중...</div>';
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/chat/rooms/${chatRoomId}/messages/all`);
+            // 멤버별 가시 메시지 전체 조회 API 사용 (페이징 없음)
+            const response = await fetch(`${API_BASE_URL}/api/v1/chat/rooms/${chatRoomId}/messages/visible/all?memberId=${currentMemberId}`);
             const messages = await response.json();
             messagesDiv.innerHTML = '';
             messages.forEach(displayMessage);
