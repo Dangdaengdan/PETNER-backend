@@ -58,4 +58,20 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
         ) latest ON m.chat_room_id = latest.chat_room_id AND m.sent_at = latest.max_sent_at
         """, nativeQuery = true)
     List<Message> findLastMessagesByChatRoomIds(@Param("chatRoomIds") List<Long> chatRoomIds);
+
+    /**
+     * 특정 시간 이후의 메시지 중에서 채팅방별 마지막 메시지 조회
+     * 멤버 가시성을 고려한 마지막 메시지 조회용
+     *
+     * @param chatRoomId 채팅방 ID
+     * @param afterTime 이 시간 이후의 메시지만 조회
+     * @return 조건에 맞는 가장 최근 메시지 (Optional)
+     */
+    @Query("SELECT m FROM Message m " +
+           "WHERE m.chatRoom.chatRoomId = :chatRoomId " +
+           "AND m.sentAt >= :afterTime " +
+           "ORDER BY m.sentAt DESC")
+    List<Message> findByChatRoomIdAndSentAtAfterOrderBySentAtDesc(
+            @Param("chatRoomId") Long chatRoomId,
+            @Param("afterTime") java.time.LocalDateTime afterTime);
 }

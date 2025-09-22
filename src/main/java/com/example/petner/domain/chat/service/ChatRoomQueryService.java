@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -63,32 +64,64 @@ public class ChatRoomQueryService {
             return List.of();
         }
 
-        // 3. 채팅방 목록 추출
-        List<ChatRoom> chatRooms = activeChatRoomMembers.stream()
+        // 3. ChatRoomMember를 채팅방 ID별로 그룹화 (중복 제거)
+        Map<Long, ChatRoomMember> chatRoomMemberMap = activeChatRoomMembers.stream()
+                .collect(Collectors.toMap(
+                        crm -> crm.getChatRoom().getChatRoomId(),
+                        crm -> crm,
+                        (existing, replacement) -> existing // 중복 시 첫 번째 것 유지
+                ));
+
+        // 4. 채팅방 목록 추출
+        List<ChatRoom> chatRooms = chatRoomMemberMap.values().stream()
                 .map(ChatRoomMember::getChatRoom)
                 .collect(Collectors.toList());
 
-        // 4. 채팅방 ID 리스트 추출
-        List<Long> chatRoomIds = chatRooms.stream()
-                .map(ChatRoom::getChatRoomId)
-                .collect(Collectors.toList());
+        // 5. 각 채팅방별로 멤버가 볼 수 있는 마지막 메시지 조회 (null 안전 처리)
+        Map<Long, Message> visibleLastMessageMap = new HashMap<>();
 
-        // 5. 모든 채팅방의 마지막 메시지를 한 번에 조회 (배치 쿼리)
-        List<Message> lastMessages = messageRepository.findLastMessagesByChatRoomIds(chatRoomIds);
+        for (Map.Entry<Long, ChatRoomMember> entry : chatRoomMemberMap.entrySet()) {
+            Long chatRoomId = entry.getKey();
+            ChatRoomMember crm = entry.getValue();
 
-        // 6. 채팅방 ID를 키로 하는 마지막 메시지 맵 생성
-        Map<Long, Message> lastMessageMap = lastMessages.stream()
-                .collect(Collectors.toMap(
-                        message -> message.getChatRoom().getChatRoomId(),
-                        message -> message
-                ));
+            Message lastMessage = null;
+            try {
+                if (crm.getJoinedAt() != null) {
+                    // 입장 시간 이후의 메시지 중 가장 최근 메시지 조회
+                    List<Message> messages = messageRepository.findByChatRoomIdAndSentAtAfterOrderBySentAtDesc(
+                            chatRoomId, crm.getJoinedAt());
+                    lastMessage = messages.isEmpty() ? null : messages.get(0);
 
-        // 7. DTO 변환 (추가 쿼리 없이 메모리에서 처리)
+                    // 디버깅용 로그
+                    // if (lastMessage == null) {
+                    //     System.out.println("DEBUG: 채팅방 " + chatRoomId + "에서 joinedAt(" + crm.getJoinedAt() + ") 이후 메시지 없음");
+                    // }
+                } else {
+                    // joinedAt이 null이면 모든 메시지 볼 수 있음
+                    lastMessage = messageRepository.findTopByChatRoom_ChatRoomIdOrderBySentAtDesc(
+                            chatRoomId).orElse(null);
+
+                    // 디버깅용 로그
+                    // if (lastMessage == null) {
+                    //     System.out.println("DEBUG: 채팅방 " + chatRoomId + "에 메시지가 전혀 없음 (joinedAt=null)");
+                    // }
+                }
+            } catch (Exception e) {
+                // 메시지 조회 실패 시 null 처리 (로그는 남기지만 에러는 무시)
+                // System.out.println("DEBUG: 채팅방 " + chatRoomId + " 메시지 조회 실패: " + e.getMessage());
+                lastMessage = null;
+            }
+
+            // null이어도 Map에 추가 (DTO 변환에서 처리)
+            visibleLastMessageMap.put(chatRoomId, lastMessage);
+        }
+
+        // 6. DTO 변환 (멤버가 볼 수 있는 마지막 메시지만 사용)
         return chatRooms.stream()
                 .map(chatRoom -> dtoConverter.convertToChatRoomListResponseDto(
                         chatRoom,
                         memberId,
-                        lastMessageMap.get(chatRoom.getChatRoomId())
+                        visibleLastMessageMap.get(chatRoom.getChatRoomId())
                 ))
                 .collect(Collectors.toList());
     }

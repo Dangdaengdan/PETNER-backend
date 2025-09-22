@@ -105,6 +105,14 @@ public class ChatRoomMember {
     }
 
     /**
+     * 입장 시간 조회
+     * @return 입장 시간
+     */
+    public LocalDateTime getJoinedAt() {
+        return this.joinedAt;
+    }
+
+    /**
      * 특정 시간 이후에 나간 상태인지 확인
      * @param messageTime 확인할 메시지 시간
      * @return 메시지 시간 이후에 나간 상태인지 여부

@@ -68,8 +68,13 @@ public class ChatRoomDtoConverter {
         ChatRoomListResponseDto.DogInfo dogInfo = createDogInfo(chatRoom);
 
         // ✅ N+1 문제 해결 - 미리 조회된 메시지 사용 (추가 쿼리 없음)
-        String lastMessageContent = lastMessage != null ? lastMessage.getContent() : "";
+        String lastMessageContent = lastMessage != null ? lastMessage.getContent() : "아직 메시지가 없습니다";
         var lastMessageSentAt = lastMessage != null ? lastMessage.getSentAt() : chatRoom.getCreatedAt();
+
+        // 디버깅: DTO 변환 단계에서 메시지 정보 출력
+        // System.out.println("DEBUG [DTO Converter]: 채팅방 " + chatRoom.getChatRoomId() +
+        //         " | lastMessage: " + (lastMessage != null ? lastMessage.getMessageId() : "null") +
+        //         " | content: '" + lastMessageContent + "'");
 
         return new ChatRoomListResponseDto(
                 chatRoom.getChatRoomId(),
