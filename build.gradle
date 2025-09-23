@@ -39,6 +39,9 @@ dependencies {
     implementation 'org.opensearch.client:opensearch-java:2.11.0'
     implementation 'org.opensearch.client:opensearch-rest-client:2.11.0'
 
+    // Jackson JSR310 for LocalDateTime serialization
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
