@@ -5,6 +5,8 @@ import com.example.petner.domain.chat.dto.request.ChatRoomCreateRequestDto;
 import com.example.petner.domain.chat.dto.response.ChatRoomResponseDto;
 import com.example.petner.domain.chat.dto.response.ChatRoomListResponseDto;
 import com.example.petner.domain.chat.dto.response.ChatMessageResponseDto;
+import com.example.petner.domain.chat.dto.response.ChatRoomMemberCountResponseDto;
+import com.example.petner.domain.chat.dto.response.ChatRoomActionResponseDto;
 import com.example.petner.domain.chat.service.ChatRoomService;
 import com.example.petner.domain.chat.service.ChatRoomQueryService;
 import com.example.petner.domain.chat.service.ChatMessageService;
@@ -111,22 +113,116 @@ public class ChatRoomController {
      * @return 채팅방 전체 메시지 목록 (200 OK)
      */
     @GetMapping("/{chatRoomId}/messages/all")
-    @Operation(summary = "특정 채팅방의 메시지 내역 전체 조회(페이징 x)", description = "특정 채팅방의 메시지 내역을 전체 조회합니다")
+    @Operation(summary = "특정 채팅방의 메시지 내역 전체 조회(페이징 x)", description = "특정 채팅방의 메시지 내역을 전체 조회합니다(디버깅용)")
     @ApiResponse(responseCode = "201", description = "채팅방 메시지 내역 전체 조회 성공")
     public ResponseEntity<List<ChatMessageResponseDto>> getAllChatRoomMessages(@PathVariable Long chatRoomId) {
         List<ChatMessageResponseDto> messages = chatMessageService.getAllChatRoomMessages(chatRoomId);
         return ResponseEntity.ok(messages);
     }
 
+    /**
+     * 특정 채팅방의 멤버별 가시 메시지 조회 API (페이징)
+     *
+     * 멤버의 입장/나가기 이력에 따라 볼 수 있는 메시지만 반환
+     * 성능 최적화를 위한 페이징 지원
+     *
+     * @param chatRoomId 조회할 채팅방 ID
+     * @param memberId 조회 요청하는 멤버 ID
+     * @param page 페이지 번호 (선택, 기본값: 0)
+     * @param size 페이지 크기 (선택, 기본값: 50)
+     * @return 해당 멤버가 볼 수 있는 메시지 목록 (200 OK)
+     */
+    @GetMapping("/{chatRoomId}/messages/visible")
+    @Operation(summary = "멤버별 가시 메시지 조회 (페이징 o)", description = "멤버의 참여 이력에 따른 가시 메시지만 조회합니다 (페이징 지원)")
+    @ApiResponse(responseCode = "200", description = "가시 메시지 조회 성공")
+    public ResponseEntity<List<ChatMessageResponseDto>> getVisibleMessagesForMember(
+            @PathVariable Long chatRoomId,
+            @RequestParam Long memberId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+        List<ChatMessageResponseDto> messages = chatMessageService.getVisibleMessagesForMember(chatRoomId, memberId, page, size);
+        return ResponseEntity.ok(messages);
+    }
+
+    /**
+     * 특정 채팅방의 멤버별 가시 메시지 전체 조회 API (페이징 없음)
+     *
+     * 멤버의 입장/나가기 이력에 따라 볼 수 있는 메시지만 반환
+     * HTML 클라이언트에서 사용할 엔드포인트 (현재 사용중)
+     *
+     * @param chatRoomId 조회할 채팅방 ID
+     * @param memberId 조회 요청하는 멤버 ID
+     * @return 해당 멤버가 볼 수 있는 메시지 목록 (200 OK)
+     */
+    @GetMapping("/{chatRoomId}/messages/visible/all")
+    @Operation(summary = "멤버별 가시 메시지 전체 조회(페이징 x)", description = "멤버의 참여 이력에 따른 가시 메시지를 전체 조회합니다")
+    @ApiResponse(responseCode = "200", description = "가시 메시지 전체 조회 성공")
+    public ResponseEntity<List<ChatMessageResponseDto>> getAllVisibleMessagesForMember(
+            @PathVariable Long chatRoomId,
+            @RequestParam Long memberId) {
+        List<ChatMessageResponseDto> messages = chatMessageService.getVisibleMessagesForMember(chatRoomId, memberId);
+        return ResponseEntity.ok(messages);
+    }
+
+    /**
+     *  채팅방 나가기 API
+     * 실제 삭제가 아닌 비활성화 처리
+     *
+     * @param chatRoomId 나갈 채팅방 ID
+     * @param memberId 나갈 멤버 ID
+     * @return 처리 결과 (200 OK)
+     */
+    @DeleteMapping("/{chatRoomId}/members/{memberId}")
+    @Operation(summary = "채팅방 나가기", description = "채팅방에서 나갑니다 (비활성화 처리)")
+    @ApiResponse(responseCode = "200", description = "채팅방 나가기 성공")
+    public ResponseEntity<ChatRoomActionResponseDto> leaveChatRoom(@PathVariable Long chatRoomId, @PathVariable Long memberId) {
+        chatRoomService.leaveChatRoom(chatRoomId, memberId);
+        ChatRoomActionResponseDto responseDto = new ChatRoomActionResponseDto(chatRoomId, memberId, "채팅방 나가기 성공");
+        return ResponseEntity.ok(responseDto);
+    }
+
+    /**
+     * 채팅방 재입장 API
+     * 비활성화된 멤버를 다시 활성화
+     *
+     * @param chatRoomId 재입장할 채팅방 ID
+     * @param memberId 재입장할 멤버 ID
+     * @return 처리 결과 (200 OK)
+     */
+    @PutMapping("/{chatRoomId}/members/{memberId}/rejoin")
+    @Operation(summary = "채팅방 재입장", description = "나간 채팅방에 다시 입장합니다")
+    @ApiResponse(responseCode = "200", description = "채팅방 재입장 성공")
+    public ResponseEntity<ChatRoomActionResponseDto> rejoinChatRoom(@PathVariable Long chatRoomId, @PathVariable Long memberId) {
+        chatRoomService.rejoinChatRoom(chatRoomId, memberId);
+        ChatRoomActionResponseDto responseDto = new ChatRoomActionResponseDto(chatRoomId, memberId, "채팅방 재입장 성공");
+        return ResponseEntity.ok(responseDto);
+    }
+
+    /**
+     * 채팅방 활성 멤버 수 조회 API
+     * 채팅방 관리 및 통계 정보 제공
+     *
+     * @param chatRoomId 조회할 채팅방 ID
+     * @return 활성 멤버 수 (200 OK)
+     */
+    @GetMapping("/{chatRoomId}/members/count")
+    @Operation(summary = "채팅방 활성 멤버 수 조회", description = "채팅방의 활성 멤버 수를 조회합니다")
+    @ApiResponse(responseCode = "200", description = "활성 멤버 수 조회 성공")
+    public ResponseEntity<ChatRoomMemberCountResponseDto> getActiveMemberCount(@PathVariable Long chatRoomId) {
+        long count = chatRoomQueryService.getActiveMemberCount(chatRoomId);
+        ChatRoomMemberCountResponseDto responseDto = new ChatRoomMemberCountResponseDto(chatRoomId, count);
+        return ResponseEntity.ok(responseDto);
+    }
+
     @Operation(
             summary = "[WS] 채팅 메시지 전송 (문서화용)",
             description = """
             ###  WebSocket STOMP 프로토콜을 통해 메시지를 전송합니다.
-            
+
             - **구독(Subscribe) 주소**: `/topic/chat/{chatRoomId}`
             - **발행(Publish) 주소**: `/app/chat/{chatRoomId}`
             - **요청 본문 (Request Body)**: `ChatMessageRequestDto` 형식
-            
+
             이 HTTP 엔드포인트는 호출할 수 없으며, 오직 WebSocket 명세 확인용입니다.
             """
     )

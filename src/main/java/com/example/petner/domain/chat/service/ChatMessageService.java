@@ -3,8 +3,10 @@ package com.example.petner.domain.chat.service;
 import com.example.petner.domain.chat.dto.request.ChatMessageRequestDto;
 import com.example.petner.domain.chat.dto.response.ChatMessageResponseDto;
 import com.example.petner.domain.chat.entity.ChatRoom;
+import com.example.petner.domain.chat.entity.ChatRoomMember;
 import com.example.petner.domain.chat.entity.Message;
 import com.example.petner.domain.chat.repository.ChatRoomRepository;
+import com.example.petner.domain.chat.repository.ChatRoomMemberRepository;
 import com.example.petner.domain.chat.repository.MessageRepository;
 import com.example.petner.domain.member.entity.Member;
 import com.example.petner.domain.member.repository.MemberRepository;
@@ -39,7 +41,9 @@ public class ChatMessageService {
 
     private final MessageRepository messageRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final MemberRepository memberRepository;
+    private final ChatRoomMemberManager memberManager;
 
     /**
      * 메시지 저장 처리 (WebSocket 컨트롤러용)
@@ -54,7 +58,7 @@ public class ChatMessageService {
      * @param messageDto 클라이언트로부터 받은 메시지 DTO
      * @return 저장된 메시지의 응답 DTO
      *
-     * @throws IllegalArgumentException 잘못된 채팅방 ID 또는 발신자 ID
+     * @throws ChatException 잘못된 채팅방 ID 또는 발신자 ID
      * @throws ChatException 채팅 관련 비즈니스 로직 위반
      */
     @Transactional
@@ -69,8 +73,8 @@ public class ChatMessageService {
             // 2. 발신자 검증
             Member sender = validateSender(messageDto.getSenderId());
 
-            // 3. 채팅방 참여자 권한 검증
-            validateChatRoomParticipant(chatRoom, sender);
+            // 3. 채팅방 참여자 권한 검증 및 나간 멤버 재입장 처리
+            memberManager.validateAndReactivateMembers(chatRoom, sender);
 
             // 4. 메시지 엔티티 생성 및 저장
             Message message = createAndSaveMessage(chatRoom, sender, messageDto.getContent());
@@ -117,8 +121,8 @@ public class ChatMessageService {
         Pageable pageable = PageRequest.of(page, size,
                 Sort.by(Sort.Direction.ASC, "sentAt"));
 
-        // 3. 메시지 조회 및 DTO 변환
-        List<Message> messages = messageRepository.findByChatRoom_ChatRoomId(chatRoomId, pageable);
+        // 3. 메시지 조회 및 DTO 변환 (N+1 문제 해결)
+        List<Message> messages = messageRepository.findByChatRoomIdWithSender(chatRoomId, pageable);
 
         List<ChatMessageResponseDto> responseDtos = messages.stream()
                 .map(ChatMessageResponseDto::new)
@@ -140,8 +144,8 @@ public class ChatMessageService {
         // 1. 채팅방 존재 여부 검증
         validateChatRoomExists(chatRoomId);
 
-        // 2. 모든 메시지 조회 (시간순 정렬)
-        List<Message> messages = messageRepository.findByChatRoom_ChatRoomIdOrderBySentAtAsc(chatRoomId);
+        // 2. 모든 메시지 조회 (시간순 정렬, N+1 문제 해결)
+        List<Message> messages = messageRepository.findByChatRoomIdWithSenderOrderBySentAtAsc(chatRoomId);
 
         List<ChatMessageResponseDto> responseDtos = messages.stream()
                 .map(ChatMessageResponseDto::new)
@@ -149,6 +153,84 @@ public class ChatMessageService {
 
         log.info("채팅방 전체 메시지 조회 완료 - {} 개 메시지 반환", responseDtos.size());
         return responseDtos;
+    }
+
+    /**
+     * 특정 채팅방의 멤버별 가시 메시지 조회 (페이징)
+     * 멤버의 입장/나가기 이력에 따라 볼 수 있는 메시지만 필터링
+     *
+     * @param chatRoomId 채팅방 고유 식별자
+     * @param memberId 조회 요청하는 멤버 ID
+     * @param page 페이지 번호 (0부터 시작)
+     * @param size 페이지 크기
+     * @return 해당 멤버가 볼 수 있는 메시지 응답 DTO 리스트
+     */
+    public List<ChatMessageResponseDto> getVisibleMessagesForMember(Long chatRoomId, Long memberId, int page, int size) {
+        log.info("멤버별 가시 메시지 조회 (페이징) - 채팅방 ID: {}, 멤버 ID: {}, 페이지: {}, 크기: {}",
+                chatRoomId, memberId, page, size);
+
+        // 1. 채팅방 존재 여부 검증
+        ChatRoom chatRoom = validateChatRoom(chatRoomId);
+
+        // 2. 멤버 검증
+        Member member = validateSender(memberId);
+
+        // 3. 멤버의 채팅방 참여 이력 조회
+        ChatRoomMember chatRoomMember = chatRoomMemberRepository
+                .findByChatRoomAndMember(chatRoom, member)
+                .orElseThrow(() -> new ChatException(ErrorCode.CHAT_UNAUTHORIZED_ACCESS));
+
+        // 4. 페이징 설정 (시간순 정렬)
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "sentAt"));
+
+        // 5. 메시지 조회 (페이징 적용, N+1 문제 해결)
+        List<Message> messages = messageRepository.findByChatRoomIdWithSender(chatRoomId, pageable);
+
+        // 6. 멤버가 볼 수 있는 메시지만 필터링
+        List<ChatMessageResponseDto> visibleMessages = messages.stream()
+                .filter(message -> chatRoomMember.canSeeMessage(message.getSentAt()))
+                .map(ChatMessageResponseDto::new)
+                .toList();
+
+        log.info("멤버별 가시 메시지 조회 완료 (페이징) - 조회: {}, 가시: {} 개 메시지",
+                messages.size(), visibleMessages.size());
+        return visibleMessages;
+    }
+
+    /**
+     * 특정 채팅방의 멤버별 가시 메시지 조회 (페이징 없음)
+     * 멤버의 입장/나가기 이력에 따라 볼 수 있는 메시지만 필터링
+     *
+     * @param chatRoomId 채팅방 고유 식별자
+     * @param memberId 조회 요청하는 멤버 ID
+     * @return 해당 멤버가 볼 수 있는 메시지 응답 DTO 리스트
+     */
+    public List<ChatMessageResponseDto> getVisibleMessagesForMember(Long chatRoomId, Long memberId) {
+        log.info("멤버별 가시 메시지 조회 - 채팅방 ID: {}, 멤버 ID: {}", chatRoomId, memberId);
+
+        // 1. 채팅방 존재 여부 검증
+        ChatRoom chatRoom = validateChatRoom(chatRoomId);
+
+        // 2. 멤버 검증
+        Member member = validateSender(memberId);
+
+        // 3. 멤버의 채팅방 참여 이력 조회
+        ChatRoomMember chatRoomMember = chatRoomMemberRepository
+                .findByChatRoomAndMember(chatRoom, member)
+                .orElseThrow(() -> new ChatException(ErrorCode.CHAT_UNAUTHORIZED_ACCESS));
+
+        // 4. 모든 메시지 조회 (시간순 정렬, N+1 문제 해결)
+        List<Message> allMessages = messageRepository.findByChatRoomIdWithSenderOrderBySentAtAsc(chatRoomId);
+
+        // 5. 멤버가 볼 수 있는 메시지만 필터링
+        List<ChatMessageResponseDto> visibleMessages = allMessages.stream()
+                .filter(message -> chatRoomMember.canSeeMessage(message.getSentAt()))
+                .map(ChatMessageResponseDto::new)
+                .toList();
+
+        log.info("멤버별 가시 메시지 조회 완료 - 전체: {}, 가시: {} 개 메시지",
+                allMessages.size(), visibleMessages.size());
+        return visibleMessages;
     }
 
     /**
@@ -187,19 +269,6 @@ public class ChatMessageService {
                 .orElseThrow(() -> new ChatException(ErrorCode.CHAT_MEMBER_NOT_FOUND));
     }
 
-    /**
-     * 채팅방 참여자 권한 검증
-     *
-     * @param chatRoom 검증할 채팅방
-     * @param sender 검증할 발신자
-     * @throws ChatException 해당 채팅방의 참여자가 아닌 경우
-     */
-    private void validateChatRoomParticipant(ChatRoom chatRoom, Member sender) {
-        if (!chatRoom.getMember1().getMemberId().equals(sender.getMemberId()) &&
-            !chatRoom.getMember2().getMemberId().equals(sender.getMemberId())) {
-            throw new ChatException(ErrorCode.CHAT_UNAUTHORIZED_ACCESS);
-        }
-    }
 
     /**
      * 메시지 엔티티 생성 및 저장
