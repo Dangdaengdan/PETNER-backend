@@ -12,9 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -36,13 +34,7 @@ public class CommentController {
         Long currentMemberId = 1L;
         CommentResponse response = commentService.createComment(postId, currentMemberId, request);
 
-        URI location = ServletUriComponentsBuilder
-                .fromCurrentContextPath()
-                .path("/api/v1/comments/{id}")
-                .buildAndExpand(response.getCommentId())
-                .toUri();
-
-        return ResponseEntity.created(location).body(response);
+        return ResponseEntity.created(null).body(response);
     }
 
     @GetMapping("/posts/{postId}/comments")
