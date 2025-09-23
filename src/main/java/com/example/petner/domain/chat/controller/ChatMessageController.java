@@ -41,7 +41,7 @@ public class ChatMessageController {
      * @param message 클라이언트가 전송한 메시지 데이터
      * @return 브로드캐스팅할 메시지 응답 DTO
      *
-     * @throws IllegalArgumentException 잘못된 채팅방 ID 또는 메시지 내용
+     * @throws ChatException 잘못된 채팅방 ID 또는 메시지 내용
      * @throws RuntimeException 메시지 저장 실패
      */
     @MessageMapping("/chat/{chatRoomId}")
@@ -62,7 +62,7 @@ public class ChatMessageController {
 
             return savedMessage;
 
-        } catch (IllegalArgumentException e) {
+        } catch (ChatException e) {
             log.warn("잘못된 메시지 요청 - 채팅방 ID: {}, 오류: {}", chatRoomId, e.getMessage());
             throw e;
         } catch (Exception e) {

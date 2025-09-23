@@ -58,7 +58,7 @@ public class ChatMessageService {
      * @param messageDto 클라이언트로부터 받은 메시지 DTO
      * @return 저장된 메시지의 응답 DTO
      *
-     * @throws IllegalArgumentException 잘못된 채팅방 ID 또는 발신자 ID
+     * @throws ChatException 잘못된 채팅방 ID 또는 발신자 ID
      * @throws ChatException 채팅 관련 비즈니스 로직 위반
      */
     @Transactional

@@ -57,7 +57,10 @@ public enum ErrorCode {
     CHAT_DOG_OWNER_MISMATCH("400-CH05", "강아지 소유자가 채팅방 참여자와 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
     CHAT_INVALID_MESSAGE_TYPE("400-CH06", "유효하지 않은 메시지 타입입니다.", HttpStatus.BAD_REQUEST),
     CHAT_INVALID_PAYLOAD("400-CH07", "메시지 페이로드가 유효하지 않습니다.", HttpStatus.BAD_REQUEST),
-    CHAT_ALREADY_ADOPTED("409-CH08", "이미 입양된 강아지입니다", HttpStatus.CONFLICT);
+    CHAT_ALREADY_ADOPTED("409-CH08", "이미 입양된 강아지입니다", HttpStatus.CONFLICT),
+    CHAT_INVALID_REQUEST("400-CH09", "잘못된 채팅 요청입니다.", HttpStatus.BAD_REQUEST),
+    CHAT_DOG_NOT_FOUND("404-CH10", "강아지 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    CHAT_INVALID_SAME_MEMBER("400-CH11", "동일한 사용자끼리는 채팅을 할 수 없습니다.", HttpStatus.BAD_REQUEST);
 
     private final String errorCode;
     private final String message;

@@ -5,6 +5,8 @@ import com.example.petner.domain.chat.entity.ChatRoom;
 import com.example.petner.domain.chat.entity.Message;
 import com.example.petner.domain.chat.repository.MessageRepository;
 import com.example.petner.domain.member.entity.Member;
+import com.example.petner.global.exception.ErrorCode;
+import com.example.petner.global.exception.customException.ChatException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -98,7 +100,7 @@ public class ChatRoomDtoConverter {
                 .map(chatRoomMember -> chatRoomMember.getMember())
                 .filter(member -> !member.getMemberId().equals(currentMemberId))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("채팅방에 다른 멤버가 없습니다."));
+                .orElseThrow(() -> new ChatException(ErrorCode.CHAT_INVALID_REQUEST));
     }
 
     private ChatRoomListResponseDto.DogInfo createDogInfo(ChatRoom chatRoom) {

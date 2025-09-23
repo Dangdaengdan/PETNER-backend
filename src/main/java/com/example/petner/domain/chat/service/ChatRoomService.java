@@ -8,6 +8,8 @@ import com.example.petner.domain.chat.repository.ChatRoomRepository;
 import com.example.petner.domain.chat.repository.ChatRoomMemberRepository;
 import com.example.petner.domain.dog.entity.Dog;
 import com.example.petner.domain.member.entity.Member;
+import com.example.petner.global.exception.ErrorCode;
+import com.example.petner.global.exception.customException.ChatException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -152,7 +154,7 @@ public class ChatRoomService {
     public void leaveChatRoom(Long chatRoomId, Long memberId) {
         // 1. 채팅방 조회
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ChatException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
         // 2. 멤버 비활성화
         chatRoom.removeMember(memberId);
@@ -169,7 +171,7 @@ public class ChatRoomService {
     public void rejoinChatRoom(Long chatRoomId, Long memberId) {
         // 1. 채팅방 조회
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ChatException(ErrorCode.CHAT_ROOM_NOT_FOUND));
 
         // 2. 멤버 조회
         Member member = chatRoomValidator.validateAndGetMember(memberId);
