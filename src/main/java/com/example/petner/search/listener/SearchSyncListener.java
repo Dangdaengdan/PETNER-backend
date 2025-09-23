@@ -1,5 +1,6 @@
 package com.example.petner.search.listener;
 
+import com.example.petner.domain.post.entity.Post;
 import com.example.petner.domain.post.repository.PostRepository;
 import com.example.petner.search.document.PostDocument;
 import com.example.petner.search.dto.PostSearchDto;
@@ -40,9 +41,10 @@ public class SearchSyncListener {
     }
 
     private void syncPostToSearch(Long postId) throws IOException {
-        PostSearchDto postDto = postRepository.findPostForSearch(postId)
+        Post post = postRepository.findByIdWithAuthor(postId)
                 .orElseThrow(() -> new IllegalArgumentException("Post not found: " + postId));
 
+        PostSearchDto postDto = PostSearchDto.from(post);
         PostDocument document = PostDocument.from(postDto);
         postSearchRepository.save(document);
 

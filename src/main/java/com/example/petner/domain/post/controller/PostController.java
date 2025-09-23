@@ -5,6 +5,8 @@ import com.example.petner.domain.post.dto.request.PostUpdateRequest;
 import com.example.petner.domain.post.dto.response.PostResponse;
 import com.example.petner.domain.post.dto.response.PostSummaryResponse;
 import com.example.petner.domain.post.service.PostService;
+import com.example.petner.search.document.PostDocument;
+import com.example.petner.search.service.PostSearchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/posts")
@@ -28,6 +31,7 @@ import java.net.URI;
 public class PostController {
 
     private final PostService postService;
+    private final PostSearchService postSearchService;
 
     @PostMapping
     @Operation(summary = "게시물 생성", description = "새로운 게시물을 생성합니다.")
@@ -87,5 +91,18 @@ public class PostController {
         // TODO: 추후 인증 기능이 구현되면, 게시물 작성자와 현재 로그인한 사용자가 동일한지 확인해야 합니다.
         postService.deletePost(postId);
         return ResponseEntity.ok("게시물이 성공적으로 삭제되었습니다.");
+    }
+
+    @GetMapping("/search")
+    @Operation(summary = "게시물 검색", description = "키워드를 통해 게시물을 검색하고 정렬할 수 있습니다.")
+    @ApiResponse(responseCode = "200", description = "게시물 검색 성공")
+    public ResponseEntity<List<PostDocument>> searchPosts(
+            @Parameter(description = "검색 키워드", example = "강아지") @RequestParam(required = false) String q,
+            @Parameter(description = "정렬 방식 (latest, oldest, viewCount)", example = "latest") @RequestParam(defaultValue = "latest") String sort,
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기", example = "10") @RequestParam(defaultValue = "10") int size) {
+
+        List<PostDocument> response = postSearchService.searchPosts(q, sort, page, size);
+        return ResponseEntity.ok(response);
     }
 }
