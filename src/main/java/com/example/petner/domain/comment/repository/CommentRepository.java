@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Long> {
@@ -17,12 +18,20 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     List<Comment> findByMember(Member member);
 
-    @Query("SELECT c FROM Comment c WHERE c.post = :post AND c.parentComment IS NULL ORDER BY c.createdAt ASC")
+    @Query("SELECT c FROM Comment c JOIN FETCH c.member WHERE c.post = :post AND c.parentComment IS NULL ORDER BY c.createdAt ASC")
     List<Comment> findParentCommentsByPost(@Param("post") Post post);
 
-    @Query("SELECT c FROM Comment c WHERE c.parentComment = :parentComment ORDER BY c.createdAt ASC")
+    @Query("SELECT c FROM Comment c JOIN FETCH c.member WHERE c.parentComment = :parentComment ORDER BY c.createdAt ASC")
     List<Comment> findRepliesByParentComment(@Param("parentComment") Comment parentComment);
 
-    @Query("SELECT c FROM Comment c WHERE c.post = :post ORDER BY c.createdAt ASC")
+    @Query("SELECT c FROM Comment c JOIN FETCH c.member WHERE c.post = :post ORDER BY c.createdAt ASC")
     List<Comment> findByPostOrderByCreatedAtAsc(@Param("post") Post post);
+
+    @Query("SELECT c FROM Comment c JOIN FETCH c.member WHERE c.commentId = :commentId")
+    Optional<Comment> findByIdWithMember(@Param("commentId") Long commentId);
+
+    @Query("SELECT c FROM Comment c JOIN FETCH c.member JOIN FETCH c.post WHERE c.commentId = :commentId")
+    Optional<Comment> findByIdWithMemberAndPost(@Param("commentId") Long commentId);
+
+    Long countByPost(Post post);
 }
