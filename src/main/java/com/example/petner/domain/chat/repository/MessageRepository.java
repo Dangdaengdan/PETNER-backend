@@ -20,7 +20,8 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
      * @param chatRoomId 채팅방 ID
      * @return 가장 최근 메시지 (Optional)
      */
-    Optional<Message> findTopByChatRoom_ChatRoomIdOrderBySentAtDesc(Long chatRoomId);
+    @Query("SELECT m FROM Message m WHERE m.chatRoom.chatRoomId = :chatRoomId ORDER BY m.sentAt DESC LIMIT 1")
+    Optional<Message> findLatestMessageByChatRoomId(@Param("chatRoomId") Long chatRoomId);
 
     /**
      * 채팅방 ID로 메시지 조회 (시간순 정렬, 페이징 지원)
@@ -30,7 +31,8 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
      * @param pageable 페이징 정보
      * @return 해당 채팅방의 메시지 목록
      */
-    List<Message> findByChatRoom_ChatRoomId(Long chatRoomId, Pageable pageable);
+    @Query("SELECT m FROM Message m WHERE m.chatRoom.chatRoomId = :chatRoomId ORDER BY m.sentAt ASC")
+    List<Message> findMessagesByChatRoomId(@Param("chatRoomId") Long chatRoomId, Pageable pageable);
 
     /**
      * 채팅방 ID로 메시지 조회 (N+1 문제 해결용, FETCH JOIN 적용)
@@ -51,7 +53,8 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
      * @param chatRoomId 채팅방 ID
      * @return 해당 채팅방의 모든 메시지 목록 (오래된 순)
      */
-    List<Message> findByChatRoom_ChatRoomIdOrderBySentAtAsc(Long chatRoomId);
+    @Query("SELECT m FROM Message m WHERE m.chatRoom.chatRoomId = :chatRoomId ORDER BY m.sentAt ASC")
+    List<Message> findMessagesByChatRoomIdOrderByTime(@Param("chatRoomId") Long chatRoomId);
 
     /**
      * 채팅방 ID로 모든 메시지 조회 (N+1 문제 해결용, FETCH JOIN 적용)

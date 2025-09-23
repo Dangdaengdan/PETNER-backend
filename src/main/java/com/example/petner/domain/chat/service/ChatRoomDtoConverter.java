@@ -35,7 +35,7 @@ public class ChatRoomDtoConverter {
         ChatRoomListResponseDto.DogInfo dogInfo = createDogInfo(chatRoom);
 
         // 🚨 N+1 문제 발생 지점 - 개별 쿼리 실행
-        var lastMessage = messageRepository.findTopByChatRoom_ChatRoomIdOrderBySentAtDesc(chatRoom.getChatRoomId());
+        var lastMessage = messageRepository.findLatestMessageByChatRoomId(chatRoom.getChatRoomId());
         String lastMessageContent = lastMessage.map(message -> message.getContent()).orElse("");
         var lastMessageSentAt = lastMessage.map(message -> message.getSentAt()).orElse(chatRoom.getCreatedAt());
 

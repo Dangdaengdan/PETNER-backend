@@ -98,7 +98,7 @@ public class ChatRoomQueryService {
                     // }
                 } else {
                     // joinedAt이 null이면 모든 메시지 볼 수 있음
-                    lastMessage = messageRepository.findTopByChatRoom_ChatRoomIdOrderBySentAtDesc(
+                    lastMessage = messageRepository.findLatestMessageByChatRoomId(
                             chatRoomId).orElse(null);
 
                     // 디버깅용 로그
