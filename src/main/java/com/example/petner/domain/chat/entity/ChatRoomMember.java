@@ -19,7 +19,12 @@ import java.time.LocalDateTime;
  * 복합 유니크 키: (chat_room_id, member_id)
  */
 @Entity
-@Table(name = "chat_room_members")
+@Table(name = "chat_room_members", uniqueConstraints = {
+        @UniqueConstraint(
+                name = "chatroom_member_uk",
+                columnNames = {"chat_room_id", "member_id"}
+        )
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatRoomMember {
@@ -73,8 +78,19 @@ public class ChatRoomMember {
      * @param chatRoom 설정할 채팅방
      */
     public void setChatRoom(ChatRoom chatRoom) {
+        // 기존 관계 해제
+        if (this.chatRoom != null && this.chatRoom != chatRoom) {
+            this.chatRoom.getChatRoomMembers().remove(this);
+        }
+
         this.chatRoom = chatRoom;
+
+        // 새로운 관계 설정 (무한 순환 방지)
+        if (chatRoom != null && !chatRoom.getChatRoomMembers().contains(this)) {
+            chatRoom.getChatRoomMembers().add(this);
+        }
     }
+
 
     /**
      * 채팅방 비활성화 (나가기)
