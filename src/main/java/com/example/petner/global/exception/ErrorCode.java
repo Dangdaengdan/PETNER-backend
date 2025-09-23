@@ -53,10 +53,14 @@ public enum ErrorCode {
     CHAT_ROOM_NOT_FOUND("404-CH01", "채팅방을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     CHAT_MEMBER_NOT_FOUND("404-CH02", "사용자 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     CHAT_UNAUTHORIZED_ACCESS("403-CH03", "채팅방에 대한 접근 권한이 없습니다.", HttpStatus.FORBIDDEN),
-    CHAT_DOG_OWNER_MISMATCH("400-CH04", "강아지 소유자가 채팅방 참여자와 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
-    CHAT_INVALID_MESSAGE_TYPE("400-CH05", "유효하지 않은 메시지 타입입니다.", HttpStatus.BAD_REQUEST),
-    CHAT_INVALID_PAYLOAD("400-CH06", "메시지 페이로드가 유효하지 않습니다.", HttpStatus.BAD_REQUEST),
-    CHAT_ALREADY_ADOPTED("409-CH07", "이미 입양된 강아지입니다", HttpStatus.CONFLICT);
+    CHAT_ROOM_ACCESS_DENIED("403-CH04", "채팅방에 대한 접근이 거부되었습니다.", HttpStatus.FORBIDDEN),
+    CHAT_DOG_OWNER_MISMATCH("400-CH05", "강아지 소유자가 채팅방 참여자와 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
+    CHAT_INVALID_MESSAGE_TYPE("400-CH06", "유효하지 않은 메시지 타입입니다.", HttpStatus.BAD_REQUEST),
+    CHAT_INVALID_PAYLOAD("400-CH07", "메시지 페이로드가 유효하지 않습니다.", HttpStatus.BAD_REQUEST),
+    CHAT_ALREADY_ADOPTED("409-CH08", "이미 입양된 강아지입니다", HttpStatus.CONFLICT),
+    CHAT_INVALID_REQUEST("400-CH09", "잘못된 채팅 요청입니다.", HttpStatus.BAD_REQUEST),
+    CHAT_DOG_NOT_FOUND("404-CH10", "강아지 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    CHAT_INVALID_SAME_MEMBER("400-CH11", "동일한 사용자끼리는 채팅을 할 수 없습니다.", HttpStatus.BAD_REQUEST);
 
     private final String errorCode;
     private final String message;

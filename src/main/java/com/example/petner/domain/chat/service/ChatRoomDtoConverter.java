@@ -5,6 +5,8 @@ import com.example.petner.domain.chat.entity.ChatRoom;
 import com.example.petner.domain.chat.entity.Message;
 import com.example.petner.domain.chat.repository.MessageRepository;
 import com.example.petner.domain.member.entity.Member;
+import com.example.petner.global.exception.ErrorCode;
+import com.example.petner.global.exception.customException.ChatException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -35,7 +37,7 @@ public class ChatRoomDtoConverter {
         ChatRoomListResponseDto.DogInfo dogInfo = createDogInfo(chatRoom);
 
         // 🚨 N+1 문제 발생 지점 - 개별 쿼리 실행
-        var lastMessage = messageRepository.findTopByChatRoom_ChatRoomIdOrderBySentAtDesc(chatRoom.getChatRoomId());
+        var lastMessage = messageRepository.findLatestMessageByChatRoomId(chatRoom.getChatRoomId());
         String lastMessageContent = lastMessage.map(message -> message.getContent()).orElse("");
         var lastMessageSentAt = lastMessage.map(message -> message.getSentAt()).orElse(chatRoom.getCreatedAt());
 
@@ -68,8 +70,13 @@ public class ChatRoomDtoConverter {
         ChatRoomListResponseDto.DogInfo dogInfo = createDogInfo(chatRoom);
 
         // ✅ N+1 문제 해결 - 미리 조회된 메시지 사용 (추가 쿼리 없음)
-        String lastMessageContent = lastMessage != null ? lastMessage.getContent() : "";
+        String lastMessageContent = lastMessage != null ? lastMessage.getContent() : "아직 메시지가 없습니다";
         var lastMessageSentAt = lastMessage != null ? lastMessage.getSentAt() : chatRoom.getCreatedAt();
+
+        // 디버깅: DTO 변환 단계에서 메시지 정보 출력
+        // System.out.println("DEBUG [DTO Converter]: 채팅방 " + chatRoom.getChatRoomId() +
+        //         " | lastMessage: " + (lastMessage != null ? lastMessage.getMessageId() : "null") +
+        //         " | content: '" + lastMessageContent + "'");
 
         return new ChatRoomListResponseDto(
                 chatRoom.getChatRoomId(),
@@ -80,9 +87,20 @@ public class ChatRoomDtoConverter {
         );
     }
 
+    /**
+     * 현재 사용자가 아닌 다른 멤버 찾기
+     * ChatRoomMember를 통해 활성/비활성 상관없이 다른 멤버를 조회
+     *
+     * @param chatRoom 채팅방
+     * @param currentMemberId 현재 사용자 ID
+     * @return 다른 멤버 정보
+     */
     private Member determineOtherMember(ChatRoom chatRoom, Long currentMemberId) {
-        return chatRoom.getMember1().getMemberId().equals(currentMemberId)
-                ? chatRoom.getMember2() : chatRoom.getMember1();
+        return chatRoom.getChatRoomMembers().stream()
+                .map(chatRoomMember -> chatRoomMember.getMember())
+                .filter(member -> !member.getMemberId().equals(currentMemberId))
+                .findFirst()
+                .orElseThrow(() -> new ChatException(ErrorCode.CHAT_INVALID_REQUEST));
     }
 
     private ChatRoomListResponseDto.DogInfo createDogInfo(ChatRoom chatRoom) {
