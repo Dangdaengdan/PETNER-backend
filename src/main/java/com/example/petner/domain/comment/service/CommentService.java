@@ -63,7 +63,6 @@ public class CommentService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new PostException(ErrorCode.POST_NOT_FOUND));
 
-        List<Comment> parentComments = commentRepository.findParentCommentsByPost(post);
         List<Comment> allComments = commentRepository.findByPostOrderByCreatedAtAsc(post);
 
         Map<Long, List<CommentResponse>> repliesMap = allComments.stream()
@@ -73,7 +72,8 @@ public class CommentService {
                         Collectors.mapping(CommentResponse::new, Collectors.toList())
                 ));
 
-        return parentComments.stream()
+        return allComments.stream()
+                .filter(comment -> !comment.isReply())
                 .map(comment -> {
                     CommentResponse response = new CommentResponse(comment);
                     response.setReplies(repliesMap.getOrDefault(comment.getCommentId(), List.of()));
