@@ -30,20 +30,18 @@ public class SwaggerConfig {
     }
     /**
      * Swagger 보안 설정
-     * JWT 토큰 인증을 위한 설정
+     * 세션 쿠키 인증을 위한 설정
      */
     private SecurityRequirement securityRequirement() {
-        return new SecurityRequirement().addList("JWT");
+        return new SecurityRequirement().addList("SESSION");
     }
 
     private Components components() {
         return new Components()
-                .addSecuritySchemes("JWT", new SecurityScheme()
-                        .name("JWT")
-                        .type(SecurityScheme.Type.HTTP)
-                        .scheme("bearer")
-                        .bearerFormat("JWT")
-                        .in(SecurityScheme.In.HEADER)
-                        .description("JWT 토큰을 입력하세요. 'Bearer ' 접두사는 자동으로 추가됩니다."));
+                .addSecuritySchemes("SESSION", new SecurityScheme()
+                        .name("SESSION")
+                        .type(SecurityScheme.Type.APIKEY)
+                        .in(SecurityScheme.In.COOKIE)
+                        .description("세션 쿠키 인증. 브라우저에서 로그인 후 자동으로 설정됩니다."));
     }
 }
