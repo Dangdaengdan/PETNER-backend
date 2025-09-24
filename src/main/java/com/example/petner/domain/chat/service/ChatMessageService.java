@@ -1,6 +1,7 @@
 package com.example.petner.domain.chat.service;
 
 import com.example.petner.domain.chat.dto.request.ChatMessageRequestDto;
+import com.example.petner.domain.chat.dto.request.ChatMessageRestRequestDto;
 import com.example.petner.domain.chat.dto.response.ChatMessageResponseDto;
 import com.example.petner.domain.chat.entity.ChatRoom;
 import com.example.petner.domain.chat.entity.ChatRoomMember;
@@ -10,6 +11,7 @@ import com.example.petner.domain.chat.repository.ChatRoomMemberRepository;
 import com.example.petner.domain.chat.repository.MessageRepository;
 import com.example.petner.domain.member.entity.Member;
 import com.example.petner.domain.member.repository.MemberRepository;
+import com.example.petner.global.dto.SessionUser;
 import com.example.petner.global.exception.ErrorCode;
 import com.example.petner.global.exception.customException.ChatException;
 import lombok.RequiredArgsConstructor;
@@ -97,31 +99,81 @@ public class ChatMessageService {
     }
 
     /**
-     * 특정 채팅방의 메시지 목록 조회
+     * REST API를 통한 메시지 전송 처리 (세션 인증 지원)
+     *
+     * @param chatRoomId 채팅방 ID
+     * @param senderId 발신자 ID (세션에서 추출)
+     * @param messageDto 메시지 내용
+     * @return 저장된 메시지의 응답 DTO
+     */
+    @Transactional
+    public ChatMessageResponseDto sendMessage(Long chatRoomId, Long senderId, ChatMessageRestRequestDto messageDto) {
+        log.info("REST API 메시지 전송 요청 - 채팅방 ID: {}, 발신자 ID: {}, 내용: {}",
+                chatRoomId, senderId, messageDto.getContent());
+
+        try {
+            // 1. 채팅방 검증
+            ChatRoom chatRoom = validateChatRoom(chatRoomId);
+
+            // 2. 발신자 검증
+            Member sender = validateSender(senderId);
+
+            // 3. 채팅방 참여자 권한 검증 및 나간 멤버 재입장 처리
+            memberManager.validateAndReactivateMembers(chatRoom, sender);
+
+            // 4. 메시지 엔티티 생성 및 저장
+            Message message = createAndSaveMessage(chatRoom, sender, messageDto.getContent());
+
+            // 5. 채팅방 마지막 메시지 시간 갱신
+            chatRoom.updateLastMessageTime();
+            chatRoomRepository.save(chatRoom);
+
+            // 6. 응답 DTO 변환
+            ChatMessageResponseDto responseDto = new ChatMessageResponseDto(message);
+
+            log.info("REST API 메시지 전송 완료 - 메시지 ID: {}", message.getMessageId());
+            return responseDto;
+
+        } catch (Exception e) {
+            log.error("REST API 메시지 전송 실패 - 채팅방 ID: {}, 발신자 ID: {}, 오류: {}",
+                    chatRoomId, senderId, e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * 특정 채팅방의 메시지 목록 조회 (권한 검증 포함)
      *
      * ERD Messages 테이블 기준:
      * - messageId, senderId, content, sendAt 컬럼 매핑
      * - 시간순 정렬 (오래된 메시지부터)
      *
      * @param chatRoomId 채팅방 고유 식별자
+     * @param requestMemberId 요청하는 멤버 ID (세션에서 추출)
      * @param page 페이지 번호 (0부터 시작)
      * @param size 페이지 크기
      * @return 메시지 응답 DTO 리스트
      *
-     * @throws ChatException 존재하지 않는 채팅방
+     * @throws ChatException 존재하지 않는 채팅방 또는 권한 없음
      */
-    public List<ChatMessageResponseDto> getChatRoomMessages(Long chatRoomId, int page, int size) {
-        log.info("채팅방 메시지 조회 - 채팅방 ID: {}, 페이지: {}, 크기: {}",
-                chatRoomId, page, size);
+    public List<ChatMessageResponseDto> getChatRoomMessages(Long chatRoomId, Long requestMemberId, int page, int size) {
+        log.info("채팅방 메시지 조회 - 채팅방 ID: {}, 요청자 ID: {}, 페이지: {}, 크기: {}",
+                chatRoomId, requestMemberId, page, size);
 
         // 1. 채팅방 존재 여부 검증
-        validateChatRoomExists(chatRoomId);
+        ChatRoom chatRoom = validateChatRoom(chatRoomId);
 
-        // 2. 페이징 설정 (시간순 정렬)
+        // 2. 요청자 검증
+        Member requestMember = validateSender(requestMemberId);
+
+        // 3. 채팅방 참여 권한 검증
+        validateChatRoomMembership(chatRoom, requestMember);
+
+        // 4. 페이징 설정 (시간순 정렬)
         Pageable pageable = PageRequest.of(page, size,
                 Sort.by(Sort.Direction.ASC, "sentAt"));
 
-        // 3. 메시지 조회 및 DTO 변환 (N+1 문제 해결)
+        // 5. 메시지 조회 및 DTO 변환 (N+1 문제 해결)
         List<Message> messages = messageRepository.findByChatRoomIdWithSender(chatRoomId, pageable);
 
         List<ChatMessageResponseDto> responseDtos = messages.stream()
@@ -133,18 +185,25 @@ public class ChatMessageService {
     }
 
     /**
-     * 특정 채팅방의 모든 메시지 조회 (페이징 없음)
+     * 특정 채팅방의 모든 메시지 조회 (페이징 없음, 권한 검증 포함)
      *
      * @param chatRoomId 채팅방 고유 식별자
+     * @param requestMemberId 요청하는 멤버 ID (세션에서 추출)
      * @return 메시지 응답 DTO 리스트
      */
-    public List<ChatMessageResponseDto> getAllChatRoomMessages(Long chatRoomId) {
-        log.info("채팅방 전체 메시지 조회 - 채팅방 ID: {}", chatRoomId);
+    public List<ChatMessageResponseDto> getAllChatRoomMessages(Long chatRoomId, Long requestMemberId) {
+        log.info("채팅방 전체 메시지 조회 - 채팅방 ID: {}, 요청자 ID: {}", chatRoomId, requestMemberId);
 
         // 1. 채팅방 존재 여부 검증
-        validateChatRoomExists(chatRoomId);
+        ChatRoom chatRoom = validateChatRoom(chatRoomId);
 
-        // 2. 모든 메시지 조회 (시간순 정렬, N+1 문제 해결)
+        // 2. 요청자 검증
+        Member requestMember = validateSender(requestMemberId);
+
+        // 3. 채팅방 참여 권한 검증
+        validateChatRoomMembership(chatRoom, requestMember);
+
+        // 4. 모든 메시지 조회 (시간순 정렬, N+1 문제 해결)
         List<Message> messages = messageRepository.findByChatRoomIdWithSenderOrderBySentAtAsc(chatRoomId);
 
         List<ChatMessageResponseDto> responseDtos = messages.stream()
@@ -269,6 +328,23 @@ public class ChatMessageService {
                 .orElseThrow(() -> new ChatException(ErrorCode.CHAT_MEMBER_NOT_FOUND));
     }
 
+
+    /**
+     * 채팅방 참여 권한 검증
+     *
+     * @param chatRoom 채팅방 엔티티
+     * @param member 검증할 멤버 엔티티
+     * @throws ChatException 채팅방에 참여하지 않은 경우
+     */
+    private void validateChatRoomMembership(ChatRoom chatRoom, Member member) {
+        boolean isMember = chatRoomMemberRepository
+                .findByChatRoomAndMember(chatRoom, member)
+                .isPresent();
+
+        if (!isMember) {
+            throw new ChatException(ErrorCode.CHAT_UNAUTHORIZED_ACCESS);
+        }
+    }
 
     /**
      * 메시지 엔티티 생성 및 저장
