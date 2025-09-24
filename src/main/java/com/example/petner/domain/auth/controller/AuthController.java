@@ -5,6 +5,8 @@ import com.example.petner.domain.auth.dto.response.LogoutResponse;
 import com.example.petner.domain.auth.dto.response.MemberResponse;
 import com.example.petner.domain.auth.dto.response.SessionResponse;
 import com.example.petner.domain.auth.service.AuthService;
+import com.example.petner.global.annotation.SessionMember;
+import com.example.petner.global.dto.SessionUser;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -69,14 +71,28 @@ public class AuthController {
     }
 
     @GetMapping("/member")
-    public ResponseEntity<MemberResponse> getCurrentMember(HttpSession session) {
-        MemberResponse member = authService.getCurrentMember(session);
+    public ResponseEntity<MemberResponse> getCurrentMember(@SessionMember SessionUser user) {
+        // @SessionMember로 자동 주입받은 SessionUser에서 바로 MemberResponse 생성
+        MemberResponse member = MemberResponse.builder()
+                .memberId(user.getMemberId())
+                .email(user.getEmail())
+                .nickname(user.getNickname())
+                .gender(user.getGender())
+                .housingType(user.getHousingType())
+                .contact(user.getContact())
+                .locationId(user.getLocationId())
+                .state(user.getState())
+                .district(user.getDistrict())
+                .locationName(user.getLocationName())
+                .profileCompleted(user.isProfileCompleted())
+                .build();
         return ResponseEntity.ok(member);
     }
 
     @GetMapping("/session")
-    public ResponseEntity<SessionResponse> checkAuthentication(HttpSession session) {
-        SessionResponse sessionStatus = authService.getSessionStatus(session);
-        return ResponseEntity.ok(sessionStatus);
+    public ResponseEntity<SessionResponse> checkAuthentication(@SessionMember(required = false) SessionUser user) {
+        boolean isAuthenticated = user != null;
+        return ResponseEntity.ok(isAuthenticated ? SessionResponse.authenticated() : SessionResponse.unauthenticated());
     }
+    
 }
