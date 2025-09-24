@@ -22,25 +22,50 @@ public final class SessionUtils {
      * 현재 로그인한 사용자 ID 조회
      * @param session HTTP 세션
      * @return 사용자 ID (미인증 시 null)
+     * @throws MemberException 세션 데이터가 손상된 경우
      */
     public static Long getCurrentMemberId(HttpSession session) {
         if (session == null) {
             return null;
         }
-        return (Long) session.getAttribute(SESSION_MEMBER_KEY);
+        
+        try {
+            Object memberIdObj = session.getAttribute(SESSION_MEMBER_KEY);
+            if (memberIdObj == null) {
+                return null;
+            }
+            return (Long) memberIdObj;
+        } catch (ClassCastException e) {
+            // 세션 데이터가 Long이 아닌 경우 (데이터 손상)
+            throw new MemberException(ErrorCode.SESSION_DATA_CORRUPTED);
+        }
     }
     
     /**
      * 현재 로그인한 사용자 정보 조회 (캐싱된 정보)
      * @param session HTTP 세션
      * @return SessionUser (미인증 시 empty)
+     * @throws MemberException 세션 데이터가 손상된 경우
      */
     public static Optional<SessionUser> getCurrentUser(HttpSession session) {
         if (session == null) {
             return Optional.empty();
         }
-        SessionUser sessionUser = (SessionUser) session.getAttribute(SESSION_USER_KEY);
-        return Optional.ofNullable(sessionUser);
+        
+        try {
+            Object sessionUserObj = session.getAttribute(SESSION_USER_KEY);
+            if (sessionUserObj == null) {
+                return Optional.empty();
+            }
+            SessionUser sessionUser = (SessionUser) sessionUserObj;
+            return Optional.of(sessionUser);
+        } catch (ClassCastException e) {
+            // 세션 데이터가 SessionUser가 아닌 경우 (데이터 손상)
+            throw new MemberException(ErrorCode.SESSION_DATA_CORRUPTED);
+        } catch (Exception e) {
+            // 직렬화/역직렬화 오류 등
+            throw new MemberException(ErrorCode.SESSION_INVALID_DATA);
+        }
     }
     
     /**
@@ -90,10 +115,14 @@ public final class SessionUtils {
      * 로그인 처리 - 세션에 사용자 정보 저장
      * @param session HTTP 세션
      * @param member 로그인한 사용자
+     * @throws MemberException 세션 또는 멤버가 null인 경우
      */
     public static void setSessionUser(HttpSession session, Member member) {
-        if (session == null || member == null) {
-            return;
+        if (session == null) {
+            throw new MemberException(ErrorCode.GLOBAL_ERROR);
+        }
+        if (member == null) {
+            throw new MemberException(ErrorCode.MEMBER_NOT_FOUND);
         }
         
         session.setAttribute(SESSION_MEMBER_KEY, member.getMemberId());
@@ -104,12 +133,33 @@ public final class SessionUtils {
      * 세션 사용자 정보 갱신 (프로필 수정 시 사용)
      * @param session HTTP 세션
      * @param memberService 멤버 서비스
+     * @throws MemberException 세션이 null이거나 인증되지 않은 경우, 멤버를 찾을 수 없는 경우
      */
     public static void refreshSessionUser(HttpSession session, MemberService memberService) {
+        if (session == null) {
+            throw new MemberException(ErrorCode.GLOBAL_ERROR);
+        }
+        if (memberService == null) {
+            throw new MemberException(ErrorCode.GLOBAL_ERROR);
+        }
+        
         Long memberId = getCurrentMemberId(session);
-        if (memberId != null) {
+        if (memberId == null) {
+            throw new MemberException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+        
+        try {
             Member member = memberService.findById(memberId);
+            if (member == null) {
+                throw new MemberException(ErrorCode.MEMBER_NOT_FOUND);
+            }
             session.setAttribute(SESSION_USER_KEY, SessionUser.from(member));
+        } catch (MemberException e) {
+            // MemberException은 그대로 전파
+            throw e;
+        } catch (Exception e) {
+            // 기타 예외는 서버 오류로 처리
+            throw new MemberException(ErrorCode.GLOBAL_ERROR);
         }
     }
     

@@ -13,6 +13,8 @@ public enum ErrorCode {
     UNAUTHORIZED_ACCESS("401-AU02", "인증이 필요합니다.", HttpStatus.UNAUTHORIZED),
     KAKAO_AUTH_FAILED("401-AU03", "카카오 인증에 실패했습니다.", HttpStatus.UNAUTHORIZED),
     KAKAO_API_ERROR("500-AU04", "카카오 API 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    SESSION_DATA_CORRUPTED("500-AU05", "세션 데이터가 손상되었습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    SESSION_INVALID_DATA("400-AU06", "세션 데이터 형식이 올바르지 않습니다.", HttpStatus.BAD_REQUEST),
 
     /* 서버 에러 */
     GLOBAL_ERROR("500-GL01", "서버 오류", HttpStatus.INTERNAL_SERVER_ERROR),
