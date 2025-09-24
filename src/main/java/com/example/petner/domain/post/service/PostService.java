@@ -67,6 +67,9 @@ public class PostService {
 
     @Transactional
     public PostResponse updatePost(Long postId, PostUpdateRequest request, Long currentUserId) {
+        memberRepository.findById(currentUserId)
+                .orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
+
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new PostException(ErrorCode.POST_NOT_FOUND));
 
@@ -85,6 +88,9 @@ public class PostService {
 
     @Transactional
     public void deletePost(Long postId, Long currentUserId) {
+        memberRepository.findById(currentUserId)
+                .orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
+
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new PostException(ErrorCode.POST_NOT_FOUND));
 
