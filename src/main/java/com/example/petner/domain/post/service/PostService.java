@@ -11,7 +11,9 @@ import com.example.petner.domain.post.entity.Post;
 import com.example.petner.global.exception.ErrorCode;
 import com.example.petner.global.exception.customException.MemberException;
 import com.example.petner.global.exception.customException.PostException;
+import com.example.petner.search.event.PostEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public PostResponse createPost(Long authorId, PostCreateRequest request) {
@@ -38,6 +41,10 @@ public class PostService {
                 .build();
 
         Post savedPost = postRepository.save(post);
+
+        // OpenSearch 동기화를 위한 이벤트 발행
+        eventPublisher.publishEvent(PostEvent.created(savedPost.getPostId()));
+
         return new PostResponse(savedPost);
     }
 
@@ -46,6 +53,10 @@ public class PostService {
         Post post = postRepository.findByIdWithAuthor(postId)
                 .orElseThrow(() -> new PostException(ErrorCode.POST_NOT_FOUND));
         post.increaseViewCount();
+
+        // OpenSearch 동기화를 위한 이벤트 발행 (조회수 업데이트)
+        eventPublisher.publishEvent(PostEvent.updated(postId));
+
         return new PostResponse(post);
     }
 
@@ -63,6 +74,9 @@ public class PostService {
 
         post.update(request.getTitle(), request.getContent(), request.getThumbImageUrl());
 
+        // OpenSearch 동기화를 위한 이벤트 발행
+        eventPublisher.publishEvent(PostEvent.updated(postId));
+
         return new PostResponse(post);
     }
 
@@ -74,5 +88,8 @@ public class PostService {
         // TODO: Implement author check for delete permission
 
         postRepository.delete(post);
+
+        // OpenSearch 동기화를 위한 이벤트 발행
+        eventPublisher.publishEvent(PostEvent.deleted(postId));
     }
 }
