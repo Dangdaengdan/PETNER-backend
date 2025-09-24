@@ -66,11 +66,14 @@ public class PostService {
     }
 
     @Transactional
-    public PostResponse updatePost(Long postId, PostUpdateRequest request) {
+    public PostResponse updatePost(Long postId, PostUpdateRequest request, Long currentUserId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new PostException(ErrorCode.POST_NOT_FOUND));
 
-        // TODO: Implement author check for update permission
+        // 작성자 권한 확인
+        if (!post.getAuthor().getMemberId().equals(currentUserId)) {
+            throw new PostException(ErrorCode.POST_ACCESS_DENIED);
+        }
 
         post.update(request.getTitle(), request.getContent(), request.getThumbImageUrl());
 
@@ -81,11 +84,14 @@ public class PostService {
     }
 
     @Transactional
-    public void deletePost(Long postId) {
+    public void deletePost(Long postId, Long currentUserId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new PostException(ErrorCode.POST_NOT_FOUND));
 
-        // TODO: Implement author check for delete permission
+        // 작성자 권한 확인
+        if (!post.getAuthor().getMemberId().equals(currentUserId)) {
+            throw new PostException(ErrorCode.POST_ACCESS_DENIED);
+        }
 
         postRepository.delete(post);
 
