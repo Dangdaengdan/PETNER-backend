@@ -1,7 +1,6 @@
 package com.example.petner.domain.dog.service;
 
 import com.example.petner.domain.breed.entity.Breed;
-import com.example.petner.domain.breed.repository.BreedRepository;
 import com.example.petner.domain.dog.dto.request.DogCreateRequestDto;
 import com.example.petner.domain.dog.dto.request.DogUpdateRequestDto;
 import com.example.petner.domain.dog.dto.response.DogListResponseDto;
@@ -9,18 +8,13 @@ import com.example.petner.domain.dog.dto.response.DogResponseDto;
 import com.example.petner.domain.dog.entity.Dog;
 import com.example.petner.domain.dog.repository.DogRepository;
 import com.example.petner.domain.member.entity.Member;
-import com.example.petner.domain.member.repository.MemberRepository;
 import com.example.petner.domain.shelter.entity.Shelter;
-import com.example.petner.domain.shelter.repository.ShelterRepository;
 import com.example.petner.global.dto.SessionUser;
 import com.example.petner.global.exception.ErrorCode;
 import com.example.petner.global.exception.customException.DogException;
-import com.example.petner.global.exception.customException.MemberException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -29,6 +23,7 @@ import java.util.stream.Collectors;
 /**
  * 유기견 관리 서비스
  * 유기견 CRUD 기능을 제공하는 서비스 클래스
+ * SOLID 원칙을 준수하여 리팩토링된 버전
  */
 @Service
 @RequiredArgsConstructor
@@ -36,9 +31,8 @@ import java.util.stream.Collectors;
 public class DogService {
 
     private final DogRepository dogRepository;
-    private final BreedRepository breedRepository;
-    private final MemberRepository memberRepository;
-    private final ShelterRepository shelterRepository;
+    private final DogValidator dogValidator;
+    private final DogUpdater dogUpdater;
 
     /**
      * 유기견 등록
@@ -50,19 +44,13 @@ public class DogService {
     @Transactional
     public DogResponseDto createDog(DogCreateRequestDto requestDto, SessionUser user) {
         // 1. 사용자 검증
-        Member member = memberRepository.findById(user.getMemberId())
-                .orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
+        Member member = dogValidator.validateAndGetMember(user);
 
         // 2. 견종 검증
-        Breed breed = breedRepository.findById(requestDto.getBreedId())
-                .orElseThrow(() -> new DogException(ErrorCode.DOG_BREED_NOT_FOUND));
+        Breed breed = dogValidator.validateAndGetBreed(requestDto.getBreedId());
 
         // 3. 보호소 검증 (선택적)
-        Shelter shelter = null;
-        if (requestDto.getShelterId() != null) {
-            shelter = shelterRepository.findById(requestDto.getShelterId())
-                    .orElseThrow(() -> new DogException(ErrorCode.DOG_SHELTER_NOT_FOUND));
-        }
+        Shelter shelter = dogValidator.validateAndGetShelter(requestDto.getShelterId());
 
         // 4. 유기견 엔티티 생성
         Dog dog = Dog.builder()
@@ -93,7 +81,7 @@ public class DogService {
      * @return 전체 유기견 목록 (최신 등록순 정렬)
      */
     public List<DogListResponseDto> getAllDogs() {
-        List<Dog> dogs = dogRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
+        List<Dog> dogs = dogRepository.findAllWithAssociations();
         return dogs.stream()
                 .map(DogListResponseDto::from)
                 .collect(Collectors.toList());
@@ -106,7 +94,7 @@ public class DogService {
      * @return 유기견 상세 정보
      */
     public DogResponseDto getDogById(Long dogId) {
-        Dog dog = dogRepository.findById(dogId)
+        Dog dog = dogRepository.findByIdWithAssociations(dogId)
                 .orElseThrow(() -> new DogException(ErrorCode.DOG_NOT_FOUND));
 
         return DogResponseDto.from(dog);
@@ -127,28 +115,24 @@ public class DogService {
                 .orElseThrow(() -> new DogException(ErrorCode.DOG_NOT_FOUND));
 
         // 2. 권한 검증 (본인이 등록한 유기견인지 확인)
-        if (!dog.getMember().getMemberId().equals(user.getMemberId())) {
-            throw new DogException(ErrorCode.DOG_ACCESS_DENIED);
-        }
+        dogValidator.validateDogAccess(dog, user);
 
         // 3. 견종 검증 (변경되는 경우)
         Breed breed = dog.getBreed();
         if (requestDto.getBreedId() != null && !requestDto.getBreedId().equals(breed.getBreedId())) {
-            breed = breedRepository.findById(requestDto.getBreedId())
-                    .orElseThrow(() -> new DogException(ErrorCode.DOG_BREED_NOT_FOUND));
+            breed = dogValidator.validateAndGetBreed(requestDto.getBreedId());
         }
 
         // 4. 보호소 검증 (변경되는 경우)
         Shelter shelter = dog.getShelter();
         if (requestDto.getShelterId() != null) {
             if (shelter == null || !requestDto.getShelterId().equals(shelter.getShelterId())) {
-                shelter = shelterRepository.findById(requestDto.getShelterId())
-                        .orElseThrow(() -> new DogException(ErrorCode.DOG_SHELTER_NOT_FOUND));
+                shelter = dogValidator.validateAndGetShelter(requestDto.getShelterId());
             }
         }
 
         // 5. 유기견 정보 업데이트
-        updateDogFields(dog, requestDto, breed, shelter);
+        dogUpdater.updateDogInfo(dog, requestDto, breed, shelter);
 
         // 6. 응답 반환 (더티 체킹으로 자동 업데이트)
         return DogResponseDto.from(dog);
@@ -167,31 +151,9 @@ public class DogService {
                 .orElseThrow(() -> new DogException(ErrorCode.DOG_NOT_FOUND));
 
         // 2. 권한 검증 (본인이 등록한 유기견인지 확인)
-        if (!dog.getMember().getMemberId().equals(user.getMemberId())) {
-            throw new DogException(ErrorCode.DOG_ACCESS_DENIED);
-        }
+        dogValidator.validateDogAccess(dog, user);
 
         // 3. 삭제 수행
         dogRepository.delete(dog);
-    }
-
-    /**
-     * 유기견 필드 업데이트 헬퍼 메서드
-     * null이 아닌 필드만 업데이트
-     */
-    private void updateDogFields(Dog dog, DogUpdateRequestDto requestDto, Breed breed, Shelter shelter) {
-        dog.updateDogInfo(
-                StringUtils.hasText(requestDto.getName()) ? requestDto.getName() : dog.getName(),
-                breed,
-                StringUtils.hasText(requestDto.getBirthDate()) ? requestDto.getBirthDate() : dog.getBirthDate(),
-                requestDto.getGender() != null ? requestDto.getGender() : dog.getGender(),
-                requestDto.getDogSize() != null ? requestDto.getDogSize() : dog.getDogSize(),
-                requestDto.getWeight() != null ? requestDto.getWeight() : dog.getWeight(),
-                requestDto.getHealthStatus() != null ? requestDto.getHealthStatus() : dog.getHealthStatus(),
-                requestDto.getDescription() != null ? requestDto.getDescription() : dog.getDescription(),
-                requestDto.getAdoptionStatus() != null ? requestDto.getAdoptionStatus() : dog.getAdoptionStatus(),
-                StringUtils.hasText(requestDto.getImageUrl()) ? requestDto.getImageUrl() : dog.getImageUrl(),
-                shelter
-        );
     }
 }
