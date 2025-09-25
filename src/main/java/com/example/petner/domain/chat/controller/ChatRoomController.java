@@ -1,7 +1,6 @@
 package com.example.petner.domain.chat.controller;
 
 import com.example.petner.domain.chat.dto.request.ChatMessageRequestDto;
-import com.example.petner.domain.chat.dto.request.ChatMessageRestRequestDto;
 import com.example.petner.domain.chat.dto.request.ChatRoomCreateRequestDto;
 import com.example.petner.domain.chat.dto.response.ChatRoomResponseDto;
 import com.example.petner.domain.chat.dto.response.ChatRoomListResponseDto;
@@ -226,26 +225,6 @@ public class ChatRoomController {
         return ResponseEntity.ok(responseDto);
     }
 
-    /**
-     * REST API를 통한 채팅 메시지 전송
-     * 세션 인증을 지원하는 메시지 전송 엔드포인트
-     *
-     * @param chatRoomId 채팅방 ID
-     * @param request 메시지 내용
-     * @param user 세션에서 자동 주입되는 사용자 정보
-     * @return 전송된 메시지 정보
-     */
-    @PostMapping("/{chatRoomId}/messages")
-    @Operation(summary = "채팅 메시지 전송", description = "REST API를 통해 채팅 메시지를 전송합니다 (세션 인증 지원)")
-    @ApiResponse(responseCode = "201", description = "메시지 전송 성공")
-    public ResponseEntity<ChatMessageResponseDto> sendMessage(
-            @PathVariable Long chatRoomId,
-            @RequestBody ChatMessageRestRequestDto request,
-            @SessionMember SessionUser user) {
-
-        ChatMessageResponseDto message = chatMessageService.sendMessage(chatRoomId, user.getMemberId(), request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(message);
-    }
 
     @Operation(
             summary = "[WS] 채팅 메시지 전송 (문서화용)",
@@ -257,7 +236,6 @@ public class ChatRoomController {
             - **요청 본문 (Request Body)**: `ChatMessageRequestDto` 형식 (senderId 포함 필요)
 
             이 HTTP 엔드포인트는 호출할 수 없으며, 오직 WebSocket 명세 확인용입니다.
-            실제 메시지 전송은 `POST /{chatRoomId}/messages` (REST API, 세션 인증) 사용 권장
             """
     )
     @PostMapping("/{chatRoomId}/messages/send-doc") // 문서화를 위한 가짜 경로

@@ -1,7 +1,6 @@
 package com.example.petner.domain.chat.service;
 
 import com.example.petner.domain.chat.dto.request.ChatMessageRequestDto;
-import com.example.petner.domain.chat.dto.request.ChatMessageRestRequestDto;
 import com.example.petner.domain.chat.dto.response.ChatMessageResponseDto;
 import com.example.petner.domain.chat.entity.ChatRoom;
 import com.example.petner.domain.chat.entity.ChatRoomMember;
@@ -57,6 +56,7 @@ public class ChatMessageService {
      * 4. 응답 DTO 변환 후 반환
      *
      * @param chatRoomId WebSocket 경로에서 추출한 채팅방 ID
+     * @param senderId 세션에서 추출한 발신자 ID
      * @param messageDto 클라이언트로부터 받은 메시지 DTO
      * @return 저장된 메시지의 응답 DTO
      *
@@ -64,16 +64,16 @@ public class ChatMessageService {
      * @throws ChatException 채팅 관련 비즈니스 로직 위반
      */
     @Transactional
-    public ChatMessageResponseDto saveMessage(Long chatRoomId, ChatMessageRequestDto messageDto) {
+    public ChatMessageResponseDto saveMessage(Long chatRoomId, Long senderId, ChatMessageRequestDto messageDto) {
         log.info("메시지 저장 요청 - 채팅방 ID: {}, 발신자 ID: {}, 내용: {}",
-                chatRoomId, messageDto.getSenderId(), messageDto.getContent());
+                chatRoomId, senderId, messageDto.getContent());
 
         try {
             // 1. 채팅방 검증 (Fail-Fast Principle)
             ChatRoom chatRoom = validateChatRoom(chatRoomId);
 
             // 2. 발신자 검증
-            Member sender = validateSender(messageDto.getSenderId());
+            Member sender = validateSender(senderId);
 
             // 3. 채팅방 참여자 권한 검증 및 나간 멤버 재입장 처리
             memberManager.validateAndReactivateMembers(chatRoom, sender);
@@ -93,53 +93,11 @@ public class ChatMessageService {
 
         } catch (Exception e) {
             log.error("메시지 저장 실패 - 채팅방 ID: {}, 발신자 ID: {}, 오류: {}",
-                    chatRoomId, messageDto.getSenderId(), e.getMessage(), e);
-            throw e;
-        }
-    }
-
-    /**
-     * REST API를 통한 메시지 전송 처리 (세션 인증 지원)
-     *
-     * @param chatRoomId 채팅방 ID
-     * @param senderId 발신자 ID (세션에서 추출)
-     * @param messageDto 메시지 내용
-     * @return 저장된 메시지의 응답 DTO
-     */
-    @Transactional
-    public ChatMessageResponseDto sendMessage(Long chatRoomId, Long senderId, ChatMessageRestRequestDto messageDto) {
-        log.info("REST API 메시지 전송 요청 - 채팅방 ID: {}, 발신자 ID: {}, 내용: {}",
-                chatRoomId, senderId, messageDto.getContent());
-
-        try {
-            // 1. 채팅방 검증
-            ChatRoom chatRoom = validateChatRoom(chatRoomId);
-
-            // 2. 발신자 검증
-            Member sender = validateSender(senderId);
-
-            // 3. 채팅방 참여자 권한 검증 및 나간 멤버 재입장 처리
-            memberManager.validateAndReactivateMembers(chatRoom, sender);
-
-            // 4. 메시지 엔티티 생성 및 저장
-            Message message = createAndSaveMessage(chatRoom, sender, messageDto.getContent());
-
-            // 5. 채팅방 마지막 메시지 시간 갱신
-            chatRoom.updateLastMessageTime();
-            chatRoomRepository.save(chatRoom);
-
-            // 6. 응답 DTO 변환
-            ChatMessageResponseDto responseDto = new ChatMessageResponseDto(message);
-
-            log.info("REST API 메시지 전송 완료 - 메시지 ID: {}", message.getMessageId());
-            return responseDto;
-
-        } catch (Exception e) {
-            log.error("REST API 메시지 전송 실패 - 채팅방 ID: {}, 발신자 ID: {}, 오류: {}",
                     chatRoomId, senderId, e.getMessage(), e);
             throw e;
         }
     }
+
 
     /**
      * 특정 채팅방의 메시지 목록 조회 (권한 검증 포함)

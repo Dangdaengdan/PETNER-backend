@@ -31,8 +31,11 @@ public class ChatRoomDtoConverter {
     @Deprecated
     public ChatRoomListResponseDto convertToChatRoomListResponseDto(ChatRoom chatRoom, Long currentMemberId) {
         Member otherMember = determineOtherMember(chatRoom, currentMemberId);
-        ChatRoomListResponseDto.OtherMemberInfo otherMemberInfo =
-                new ChatRoomListResponseDto.OtherMemberInfo(otherMember.getMemberId(), otherMember.getNickname());
+        ChatRoomListResponseDto.OtherMemberInfo otherMemberInfo = null;
+
+        if (otherMember != null) {
+            otherMemberInfo = new ChatRoomListResponseDto.OtherMemberInfo(otherMember.getMemberId(), otherMember.getNickname());
+        }
 
         ChatRoomListResponseDto.DogInfo dogInfo = createDogInfo(chatRoom);
 
@@ -64,8 +67,11 @@ public class ChatRoomDtoConverter {
             Message lastMessage
     ) {
         Member otherMember = determineOtherMember(chatRoom, currentMemberId);
-        ChatRoomListResponseDto.OtherMemberInfo otherMemberInfo =
-                new ChatRoomListResponseDto.OtherMemberInfo(otherMember.getMemberId(), otherMember.getNickname());
+        ChatRoomListResponseDto.OtherMemberInfo otherMemberInfo = null;
+
+        if (otherMember != null) {
+            otherMemberInfo = new ChatRoomListResponseDto.OtherMemberInfo(otherMember.getMemberId(), otherMember.getNickname());
+        }
 
         ChatRoomListResponseDto.DogInfo dogInfo = createDogInfo(chatRoom);
 
@@ -93,14 +99,20 @@ public class ChatRoomDtoConverter {
      *
      * @param chatRoom 채팅방
      * @param currentMemberId 현재 사용자 ID
-     * @return 다른 멤버 정보
+     * @return 다른 멤버 정보 (없으면 null 반환)
      */
     private Member determineOtherMember(ChatRoom chatRoom, Long currentMemberId) {
-        return chatRoom.getChatRoomMembers().stream()
-                .map(chatRoomMember -> chatRoomMember.getMember())
-                .filter(member -> !member.getMemberId().equals(currentMemberId))
-                .findFirst()
-                .orElseThrow(() -> new ChatException(ErrorCode.CHAT_INVALID_REQUEST));
+        try {
+            return chatRoom.getChatRoomMembers().stream()
+                    .map(chatRoomMember -> chatRoomMember.getMember())
+                    .filter(member -> member != null && !member.getMemberId().equals(currentMemberId))
+                    .findFirst()
+                    .orElse(null); // 예외 대신 null 반환
+        } catch (Exception e) {
+            // 예외 발생 시 null 반환하고 로그 출력
+            System.err.println("채팅방 " + chatRoom.getChatRoomId() + "에서 상대방을 찾는 중 오류 발생: " + e.getMessage());
+            return null;
+        }
     }
 
     private ChatRoomListResponseDto.DogInfo createDogInfo(ChatRoom chatRoom) {
