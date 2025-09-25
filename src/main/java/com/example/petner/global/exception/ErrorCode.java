@@ -52,6 +52,7 @@ public enum ErrorCode {
     /* 즐겨찾기 관련 */
     FAVORITE_NOT_FOUND("404-FV01", "즐겨찾기를 찾을 수 없습니다", HttpStatus.NOT_FOUND),
     FAVORITE_ALREADY_EXISTS("409-FV02", "이미 즐겨찾기에 추가된 항목입니다", HttpStatus.CONFLICT),
+    FAVORITE_NOT_IN_MY_LIST("400-FV03", "내 즐겨찾기 목록에 없는 강아지입니다", HttpStatus.BAD_REQUEST),
 
     /* 위치 관련 */
     LOCATION_NOT_FOUND("404-LC01", "위치 정보를 찾을 수 없습니다", HttpStatus.NOT_FOUND),
