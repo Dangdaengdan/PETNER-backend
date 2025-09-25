@@ -88,4 +88,30 @@ public class Member {
                 && contact != null 
                 && location != null;
     }
+    
+    /**
+     * 프로필 완성
+     */
+    public void completeProfile(String email, String nickname, Gender gender,
+                               HousingType housingType, String contact, Location location) {
+        this.email = email;
+        this.nickname = nickname;
+        this.gender = gender;
+        this.housingType = housingType;
+        this.contact = contact;
+        this.location = location;
+    }
+    
+    /**
+     * 프로필 업데이트
+     */
+    public void updateProfile(String email, String nickname, Gender gender,
+                             HousingType housingType, String contact, Location location) {
+        if (email != null) this.email = email;
+        if (nickname != null) this.nickname = nickname;
+        if (gender != null) this.gender = gender;
+        if (housingType != null) this.housingType = housingType;
+        if (contact != null) this.contact = contact;
+        if (location != null) this.location = location;
+    }
 }
