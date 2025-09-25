@@ -56,7 +56,7 @@ public class PostSearchRepository {
             ? Query.of(q -> q.multiMatch(m -> m
                 .query(keyword)
                 .fields("title^2", "content", "authorName")
-                .analyzer("nori_analyzer")
+                .analyzer("nori")
             ))
             : Query.of(q -> q.matchAll(m -> m));
 

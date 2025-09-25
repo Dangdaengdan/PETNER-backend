@@ -12,7 +12,9 @@ import com.example.petner.domain.shelter.entity.Shelter;
 import com.example.petner.global.dto.SessionUser;
 import com.example.petner.global.exception.ErrorCode;
 import com.example.petner.global.exception.customException.DogException;
+import com.example.petner.search.event.DogEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,7 @@ public class DogService {
     private final DogRepository dogRepository;
     private final DogValidator dogValidator;
     private final DogUpdater dogUpdater;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 유기견 등록
@@ -71,7 +74,10 @@ public class DogService {
         // 5. 데이터베이스에 저장
         Dog savedDog = dogRepository.save(dog);
 
-        // 6. 응답 DTO 반환
+        // 6. OpenSearch 동기화를 위한 이벤트 발행
+        eventPublisher.publishEvent(DogEvent.created(savedDog.getDogId()));
+
+        // 7. 응답 DTO 반환
         return DogResponseDto.from(savedDog);
     }
 
@@ -134,7 +140,10 @@ public class DogService {
         // 5. 유기견 정보 업데이트
         dogUpdater.updateDogInfo(dog, requestDto, breed, shelter);
 
-        // 6. 응답 반환 (더티 체킹으로 자동 업데이트)
+        // 6. OpenSearch 동기화를 위한 이벤트 발행
+        eventPublisher.publishEvent(DogEvent.updated(dogId));
+
+        // 7. 응답 반환 (더티 체킹으로 자동 업데이트)
         return DogResponseDto.from(dog);
     }
 
@@ -155,5 +164,8 @@ public class DogService {
 
         // 3. 삭제 수행
         dogRepository.delete(dog);
+
+        // 4. OpenSearch 동기화를 위한 이벤트 발행
+        eventPublisher.publishEvent(DogEvent.deleted(dogId));
     }
 }
