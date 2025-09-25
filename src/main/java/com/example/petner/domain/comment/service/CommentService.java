@@ -47,6 +47,11 @@ public class CommentService {
             if (!parentComment.getPost().getPostId().equals(postId)) {
                 throw new CommentException(ErrorCode.COMMENT_POST_MISMATCH);
             }
+
+            // 2-depth 제한: 대댓글의 대댓글은 불가
+            if (parentComment.isReply()) {
+                throw new CommentException(ErrorCode.COMMENT_MAX_DEPTH_EXCEEDED);
+            }
         }
 
         Comment comment = Comment.builder()
