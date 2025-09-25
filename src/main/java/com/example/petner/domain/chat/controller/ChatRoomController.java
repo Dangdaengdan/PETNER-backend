@@ -10,6 +10,8 @@ import com.example.petner.domain.chat.dto.response.ChatRoomActionResponseDto;
 import com.example.petner.domain.chat.service.ChatRoomService;
 import com.example.petner.domain.chat.service.ChatRoomQueryService;
 import com.example.petner.domain.chat.service.ChatMessageService;
+import com.example.petner.global.annotation.SessionMember;
+import com.example.petner.global.dto.SessionUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,29 +47,31 @@ public class ChatRoomController {
     @PostMapping("")
     @Operation(summary = "채팅방 생성", description = "새로운 채팅방을 생성합니다.")
     @ApiResponse(responseCode = "201", description = "채팅방 생성 성공")
-    public ResponseEntity<ChatRoomResponseDto> createChatRoom(@RequestBody ChatRoomCreateRequestDto requestDto) {
-        // 채팅방 생성 또는 기존 채팅방 반환
-        ChatRoomResponseDto responseDto = chatRoomService.createChatRoom(requestDto);
+    public ResponseEntity<ChatRoomResponseDto> createChatRoom(
+            @RequestBody ChatRoomCreateRequestDto requestDto,
+            @SessionMember SessionUser user) {
+        // 세션에서 자동으로 로그인 사용자 정보 주입
+        ChatRoomResponseDto responseDto = chatRoomService.createChatRoom(requestDto, user);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
 
     /**
-     * 특정 사용자의 전체 채팅방 목록 조회 API
+     * 로그인한 사용자의 전체 채팅방 목록 조회 API
      *
-     * @param memberId 조회할 사용자 ID
+     * @param user 세션에서 자동 주입되는 로그인 사용자 정보
      * @return 사용자가 참여 중인 채팅방 목록 (200 OK)
      *
      * 비즈니스 로직:
-     * 1. 요청된 멤버가 존재하는지 검증
+     * 1. 세션에서 로그인 사용자 정보 자동 추출
      * 2. 해당 멤버가 참여 중인 모든 채팅방 조회
      * 3. 각 채팅방의 상대방 정보와 마지막 메시지 포함하여 반환
      * 4. N+1 문제 방지를 위한 효율적인 조회 수행
      */
-    @GetMapping("/members/{memberId}")
-    @Operation(summary = "사용자의 채팅방 목록 조회", description = "사용자의 채팅방 목록을 조회합니다")
-    @ApiResponse(responseCode = "201", description = "채팅방 목록 조회 성공")
-    public ResponseEntity<List<ChatRoomListResponseDto>> getMemberChatRooms(@PathVariable Long memberId) {
-        List<ChatRoomListResponseDto> chatRooms = chatRoomQueryService.getMemberChatRooms(memberId);
+    @GetMapping("/rooms/my")
+    @Operation(summary = "내 채팅방 목록 조회", description = "로그인한 사용자의 채팅방 목록을 조회합니다")
+    @ApiResponse(responseCode = "200", description = "채팅방 목록 조회 성공")
+    public ResponseEntity<List<ChatRoomListResponseDto>> getMyChatRooms(@SessionMember SessionUser user) {
+        List<ChatRoomListResponseDto> chatRooms = chatRoomQueryService.getMemberChatRooms(user.getMemberId());
         return ResponseEntity.ok(chatRooms);
     }
 
@@ -92,14 +96,15 @@ public class ChatRoomController {
      * 4. ERD 컬럼명에 맞춘 응답 DTO 반환
      */
     @GetMapping("/{chatRoomId}/messages")
-    @Operation(summary = "특정 채팅방의 메시지 내역 조회(페이징 o)", description = "특정 채팅방의 메시지 내역을 조회합니다")
-    @ApiResponse(responseCode = "201", description = "채팅방 메시지 내역 조회 성공")
+    @Operation(summary = "내가 참여한 채팅방의 메시지 내역 조회(페이징 o)", description = "로그인한 사용자가 참여한 채팅방의 메시지 내역을 조회합니다")
+    @ApiResponse(responseCode = "200", description = "채팅방 메시지 내역 조회 성공")
     public ResponseEntity<List<ChatMessageResponseDto>> getChatRoomMessages(
             @PathVariable Long chatRoomId,
+            @SessionMember SessionUser user,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size
     ) {
-        List<ChatMessageResponseDto> messages = chatMessageService.getChatRoomMessages(chatRoomId, page, size);
+        List<ChatMessageResponseDto> messages = chatMessageService.getChatRoomMessages(chatRoomId, user.getMemberId(), page, size);
         return ResponseEntity.ok(messages);
     }
 
@@ -113,10 +118,12 @@ public class ChatRoomController {
      * @return 채팅방 전체 메시지 목록 (200 OK)
      */
     @GetMapping("/{chatRoomId}/messages/all")
-    @Operation(summary = "특정 채팅방의 메시지 내역 전체 조회(페이징 x)", description = "특정 채팅방의 메시지 내역을 전체 조회합니다(디버깅용)")
-    @ApiResponse(responseCode = "201", description = "채팅방 메시지 내역 전체 조회 성공")
-    public ResponseEntity<List<ChatMessageResponseDto>> getAllChatRoomMessages(@PathVariable Long chatRoomId) {
-        List<ChatMessageResponseDto> messages = chatMessageService.getAllChatRoomMessages(chatRoomId);
+    @Operation(summary = "내가 참여한 채팅방의 메시지 내역 전체 조회(페이징 x)", description = "로그인한 사용자가 참여한 채팅방의 메시지 내역을 전체 조회합니다(디버깅용)")
+    @ApiResponse(responseCode = "200", description = "채팅방 메시지 내역 전체 조회 성공")
+    public ResponseEntity<List<ChatMessageResponseDto>> getAllChatRoomMessages(
+            @PathVariable Long chatRoomId,
+            @SessionMember SessionUser user) {
+        List<ChatMessageResponseDto> messages = chatMessageService.getAllChatRoomMessages(chatRoomId, user.getMemberId());
         return ResponseEntity.ok(messages);
     }
 
@@ -127,20 +134,20 @@ public class ChatRoomController {
      * 성능 최적화를 위한 페이징 지원
      *
      * @param chatRoomId 조회할 채팅방 ID
-     * @param memberId 조회 요청하는 멤버 ID
+     * @param user 세션에서 자동 주입되는 로그인 사용자 정보
      * @param page 페이지 번호 (선택, 기본값: 0)
      * @param size 페이지 크기 (선택, 기본값: 50)
      * @return 해당 멤버가 볼 수 있는 메시지 목록 (200 OK)
      */
     @GetMapping("/{chatRoomId}/messages/visible")
-    @Operation(summary = "멤버별 가시 메시지 조회 (페이징 o)", description = "멤버의 참여 이력에 따른 가시 메시지만 조회합니다 (페이징 지원)")
+    @Operation(summary = "내 가시 메시지 조회 (페이징 o)", description = "로그인한 사용자의 참여 이력에 따른 가시 메시지만 조회합니다 (페이징 지원)")
     @ApiResponse(responseCode = "200", description = "가시 메시지 조회 성공")
     public ResponseEntity<List<ChatMessageResponseDto>> getVisibleMessagesForMember(
             @PathVariable Long chatRoomId,
-            @RequestParam Long memberId,
+            @SessionMember SessionUser user,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
-        List<ChatMessageResponseDto> messages = chatMessageService.getVisibleMessagesForMember(chatRoomId, memberId, page, size);
+        List<ChatMessageResponseDto> messages = chatMessageService.getVisibleMessagesForMember(chatRoomId, user.getMemberId(), page, size);
         return ResponseEntity.ok(messages);
     }
 
@@ -151,16 +158,16 @@ public class ChatRoomController {
      * HTML 클라이언트에서 사용할 엔드포인트 (현재 사용중)
      *
      * @param chatRoomId 조회할 채팅방 ID
-     * @param memberId 조회 요청하는 멤버 ID
+     * @param user 세션에서 자동 주입되는 로그인 사용자 정보
      * @return 해당 멤버가 볼 수 있는 메시지 목록 (200 OK)
      */
     @GetMapping("/{chatRoomId}/messages/visible/all")
-    @Operation(summary = "멤버별 가시 메시지 전체 조회(페이징 x)", description = "멤버의 참여 이력에 따른 가시 메시지를 전체 조회합니다")
+    @Operation(summary = "내 가시 메시지 전체 조회(페이징 x)", description = "로그인한 사용자의 참여 이력에 따른 가시 메시지를 전체 조회합니다")
     @ApiResponse(responseCode = "200", description = "가시 메시지 전체 조회 성공")
     public ResponseEntity<List<ChatMessageResponseDto>> getAllVisibleMessagesForMember(
             @PathVariable Long chatRoomId,
-            @RequestParam Long memberId) {
-        List<ChatMessageResponseDto> messages = chatMessageService.getVisibleMessagesForMember(chatRoomId, memberId);
+            @SessionMember SessionUser user) {
+        List<ChatMessageResponseDto> messages = chatMessageService.getVisibleMessagesForMember(chatRoomId, user.getMemberId());
         return ResponseEntity.ok(messages);
     }
 
@@ -169,15 +176,17 @@ public class ChatRoomController {
      * 실제 삭제가 아닌 비활성화 처리
      *
      * @param chatRoomId 나갈 채팅방 ID
-     * @param memberId 나갈 멤버 ID
+     * @param user 세션에서 자동 주입되는 로그인 사용자 정보
      * @return 처리 결과 (200 OK)
      */
-    @DeleteMapping("/{chatRoomId}/members/{memberId}")
+    @DeleteMapping("/{chatRoomId}/leave")
     @Operation(summary = "채팅방 나가기", description = "채팅방에서 나갑니다 (비활성화 처리)")
     @ApiResponse(responseCode = "200", description = "채팅방 나가기 성공")
-    public ResponseEntity<ChatRoomActionResponseDto> leaveChatRoom(@PathVariable Long chatRoomId, @PathVariable Long memberId) {
-        chatRoomService.leaveChatRoom(chatRoomId, memberId);
-        ChatRoomActionResponseDto responseDto = new ChatRoomActionResponseDto(chatRoomId, memberId, "채팅방 나가기 성공");
+    public ResponseEntity<ChatRoomActionResponseDto> leaveChatRoom(
+            @PathVariable Long chatRoomId,
+            @SessionMember SessionUser user) {
+        chatRoomService.leaveChatRoom(chatRoomId, user.getMemberId());
+        ChatRoomActionResponseDto responseDto = new ChatRoomActionResponseDto(chatRoomId, user.getMemberId(), "채팅방 나가기 성공");
         return ResponseEntity.ok(responseDto);
     }
 
@@ -186,15 +195,17 @@ public class ChatRoomController {
      * 비활성화된 멤버를 다시 활성화
      *
      * @param chatRoomId 재입장할 채팅방 ID
-     * @param memberId 재입장할 멤버 ID
+     * @param user 세션에서 자동 주입되는 로그인 사용자 정보
      * @return 처리 결과 (200 OK)
      */
-    @PutMapping("/{chatRoomId}/members/{memberId}/rejoin")
+    @PutMapping("/{chatRoomId}/rejoin")
     @Operation(summary = "채팅방 재입장", description = "나간 채팅방에 다시 입장합니다")
     @ApiResponse(responseCode = "200", description = "채팅방 재입장 성공")
-    public ResponseEntity<ChatRoomActionResponseDto> rejoinChatRoom(@PathVariable Long chatRoomId, @PathVariable Long memberId) {
-        chatRoomService.rejoinChatRoom(chatRoomId, memberId);
-        ChatRoomActionResponseDto responseDto = new ChatRoomActionResponseDto(chatRoomId, memberId, "채팅방 재입장 성공");
+    public ResponseEntity<ChatRoomActionResponseDto> rejoinChatRoom(
+            @PathVariable Long chatRoomId,
+            @SessionMember SessionUser user) {
+        chatRoomService.rejoinChatRoom(chatRoomId, user.getMemberId());
+        ChatRoomActionResponseDto responseDto = new ChatRoomActionResponseDto(chatRoomId, user.getMemberId(), "채팅방 재입장 성공");
         return ResponseEntity.ok(responseDto);
     }
 
@@ -214,6 +225,7 @@ public class ChatRoomController {
         return ResponseEntity.ok(responseDto);
     }
 
+
     @Operation(
             summary = "[WS] 채팅 메시지 전송 (문서화용)",
             description = """
@@ -221,7 +233,7 @@ public class ChatRoomController {
 
             - **구독(Subscribe) 주소**: `/topic/chat/{chatRoomId}`
             - **발행(Publish) 주소**: `/app/chat/{chatRoomId}`
-            - **요청 본문 (Request Body)**: `ChatMessageRequestDto` 형식
+            - **요청 본문 (Request Body)**: `ChatMessageRequestDto` 형식 (senderId 포함 필요)
 
             이 HTTP 엔드포인트는 호출할 수 없으며, 오직 WebSocket 명세 확인용입니다.
             """
