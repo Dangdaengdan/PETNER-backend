@@ -1,8 +1,9 @@
 package com.example.petner.domain.comment.service;
 
-import com.example.petner.domain.comment.dto.request.CommentCreateRequest;
-import com.example.petner.domain.comment.dto.request.CommentUpdateRequest;
-import com.example.petner.domain.comment.dto.response.CommentResponse;
+import com.example.petner.domain.comment.dto.request.CommentCreateRequestDto;
+import com.example.petner.domain.comment.dto.request.CommentUpdateRequestDto;
+import com.example.petner.domain.comment.dto.response.CommentResponseDto;
+import com.example.petner.domain.comment.dto.response.CommentDeleteResponseDto;
 import com.example.petner.domain.comment.entity.Comment;
 import com.example.petner.domain.comment.repository.CommentRepository;
 import com.example.petner.domain.member.entity.Member;
@@ -31,7 +32,7 @@ public class CommentService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public CommentResponse createComment(Long postId, Long currentUserId, CommentCreateRequest request) {
+    public CommentResponseDto createComment(Long postId, Long currentUserId, CommentCreateRequestDto request) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new PostException(ErrorCode.POST_NOT_FOUND));
 
@@ -56,26 +57,26 @@ public class CommentService {
                 .build();
 
         Comment savedComment = commentRepository.save(comment);
-        return new CommentResponse(savedComment);
+        return new CommentResponseDto(savedComment);
     }
 
-    public List<CommentResponse> getCommentsByPost(Long postId) {
+    public List<CommentResponseDto> getCommentsByPost(Long postId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new PostException(ErrorCode.POST_NOT_FOUND));
 
         List<Comment> allComments = commentRepository.findByPostOrderByCreatedAtAsc(post);
 
-        Map<Long, List<CommentResponse>> repliesMap = allComments.stream()
+        Map<Long, List<CommentResponseDto>> repliesMap = allComments.stream()
                 .filter(Comment::isReply)
                 .collect(Collectors.groupingBy(
                         comment -> comment.getParentComment().getCommentId(),
-                        Collectors.mapping(CommentResponse::new, Collectors.toList())
+                        Collectors.mapping(CommentResponseDto::new, Collectors.toList())
                 ));
 
         return allComments.stream()
                 .filter(comment -> !comment.isReply())
                 .map(comment -> {
-                    CommentResponse response = new CommentResponse(comment);
+                    CommentResponseDto response = new CommentResponseDto(comment);
                     response.setReplies(repliesMap.getOrDefault(comment.getCommentId(), List.of()));
                     return response;
                 })
@@ -83,7 +84,7 @@ public class CommentService {
     }
 
     @Transactional
-    public CommentResponse updateComment(Long commentId, Long currentUserId, CommentUpdateRequest request) {
+    public CommentResponseDto updateComment(Long commentId, Long currentUserId, CommentUpdateRequestDto request) {
         Comment comment = commentRepository.findByIdWithMember(commentId)
                 .orElseThrow(() -> new CommentException(ErrorCode.COMMENT_NOT_FOUND));
 
@@ -94,11 +95,11 @@ public class CommentService {
 
         comment.update(request.getContent());
 
-        return new CommentResponse(comment);
+        return new CommentResponseDto(comment);
     }
 
     @Transactional
-    public void deleteComment(Long commentId, Long currentUserId) {
+    public CommentDeleteResponseDto deleteComment(Long commentId, Long currentUserId) {
         Comment comment = commentRepository.findByIdWithMember(commentId)
                 .orElseThrow(() -> new CommentException(ErrorCode.COMMENT_NOT_FOUND));
 
@@ -108,5 +109,7 @@ public class CommentService {
         }
 
         commentRepository.delete(comment);
+
+        return CommentDeleteResponseDto.success(commentId, currentUserId);
     }
 }

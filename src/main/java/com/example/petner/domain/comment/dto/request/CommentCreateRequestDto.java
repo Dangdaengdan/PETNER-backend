@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Schema(description = "댓글 생성 요청")
-public class CommentCreateRequest {
+public class CommentCreateRequestDto {
 
     @Schema(description = "댓글 내용", example = "좋은 게시물이네요!")
     @NotBlank(message = "댓글 내용은 비워둘 수 없습니다.")

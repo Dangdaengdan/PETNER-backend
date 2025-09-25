@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
-public class CommentResponse {
+public class CommentResponseDto {
 
     private final Long commentId;
     private final String content;
@@ -16,9 +16,9 @@ public class CommentResponse {
     private final LocalDateTime updatedAt;
     private final Long parentCommentId;
     private final boolean isReply;
-    private List<CommentResponse> replies;
+    private List<CommentResponseDto> replies;
 
-    public CommentResponse(Comment comment) {
+    public CommentResponseDto(Comment comment) {
         this.commentId = comment.getCommentId();
         this.content = comment.getContent();
         this.authorNickname = comment.getMember().getNickname();
@@ -29,7 +29,7 @@ public class CommentResponse {
         this.replies = List.of();
     }
 
-    public void setReplies(List<CommentResponse> replies) {
+    public void setReplies(List<CommentResponseDto> replies) {
         this.replies = replies;
     }
 }
