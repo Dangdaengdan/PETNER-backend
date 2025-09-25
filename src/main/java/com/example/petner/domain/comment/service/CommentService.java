@@ -84,10 +84,6 @@ public class CommentService {
 
     @Transactional
     public CommentResponse updateComment(Long commentId, Long currentUserId, CommentUpdateRequest request) {
-        // 현재 사용자가 존재하는지 확인
-        memberRepository.findById(currentUserId)
-                .orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
-
         Comment comment = commentRepository.findByIdWithMember(commentId)
                 .orElseThrow(() -> new CommentException(ErrorCode.COMMENT_NOT_FOUND));
 
@@ -103,10 +99,6 @@ public class CommentService {
 
     @Transactional
     public void deleteComment(Long commentId, Long currentUserId) {
-        // 현재 사용자가 존재하는지 확인
-        memberRepository.findById(currentUserId)
-                .orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
-
         Comment comment = commentRepository.findByIdWithMember(commentId)
                 .orElseThrow(() -> new CommentException(ErrorCode.COMMENT_NOT_FOUND));
 
