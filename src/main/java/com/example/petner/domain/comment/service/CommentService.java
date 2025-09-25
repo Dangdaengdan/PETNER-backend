@@ -31,11 +31,11 @@ public class CommentService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public CommentResponse createComment(Long postId, Long authorId, CommentCreateRequest request) {
+    public CommentResponse createComment(Long postId, Long currentUserId, CommentCreateRequest request) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new PostException(ErrorCode.POST_NOT_FOUND));
 
-        Member author = memberRepository.findById(authorId)
+        Member author = memberRepository.findById(currentUserId)
                 .orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
 
         Comment parentComment = null;
