@@ -2,10 +2,11 @@ package com.example.petner.domain.post.service;
 
 import com.example.petner.domain.member.entity.Member;
 import com.example.petner.domain.member.repository.MemberRepository;
-import com.example.petner.domain.post.dto.request.PostCreateRequest;
-import com.example.petner.domain.post.dto.response.PostResponse;
-import com.example.petner.domain.post.dto.response.PostSummaryResponse;
-import com.example.petner.domain.post.dto.request.PostUpdateRequest;
+import com.example.petner.domain.post.dto.request.PostCreateRequestDto;
+import com.example.petner.domain.post.dto.response.PostResponseDto;
+import com.example.petner.domain.post.dto.response.PostSummaryResponseDto;
+import com.example.petner.domain.post.dto.response.PostDeleteResponseDto;
+import com.example.petner.domain.post.dto.request.PostUpdateRequestDto;
 import com.example.petner.domain.post.repository.PostRepository;
 import com.example.petner.domain.post.entity.Post;
 import com.example.petner.global.exception.ErrorCode;
@@ -29,7 +30,7 @@ public class PostService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
-    public PostResponse createPost(Long authorId, PostCreateRequest request) {
+    public PostResponseDto createPost(Long authorId, PostCreateRequestDto request) {
         Member author = memberRepository.findById(authorId)
                 .orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
 
@@ -45,11 +46,11 @@ public class PostService {
         // OpenSearch 동기화를 위한 이벤트 발행
         eventPublisher.publishEvent(PostEvent.created(savedPost.getPostId()));
 
-        return new PostResponse(savedPost);
+        return new PostResponseDto(savedPost);
     }
 
     @Transactional
-    public PostResponse getPost(Long postId) {
+    public PostResponseDto getPost(Long postId) {
         Post post = postRepository.findByIdWithAuthor(postId)
                 .orElseThrow(() -> new PostException(ErrorCode.POST_NOT_FOUND));
         post.increaseViewCount();
@@ -57,19 +58,16 @@ public class PostService {
         // OpenSearch 동기화를 위한 이벤트 발행 (조회수 업데이트)
         eventPublisher.publishEvent(PostEvent.updated(postId));
 
-        return new PostResponse(post);
+        return new PostResponseDto(post);
     }
 
-    public Page<PostSummaryResponse> getPosts(Pageable pageable) {
+    public Page<PostSummaryResponseDto> getPosts(Pageable pageable) {
         return postRepository.findAllWithAuthor(pageable)
-                .map(PostSummaryResponse::new);
+                .map(PostSummaryResponseDto::new);
     }
 
     @Transactional
-    public PostResponse updatePost(Long postId, PostUpdateRequest request, Long currentUserId) {
-        memberRepository.findById(currentUserId)
-                .orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
-
+    public PostResponseDto updatePost(Long postId, PostUpdateRequestDto request, Long currentUserId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new PostException(ErrorCode.POST_NOT_FOUND));
 
@@ -83,14 +81,11 @@ public class PostService {
         // OpenSearch 동기화를 위한 이벤트 발행
         eventPublisher.publishEvent(PostEvent.updated(postId));
 
-        return new PostResponse(post);
+        return new PostResponseDto(post);
     }
 
     @Transactional
-    public void deletePost(Long postId, Long currentUserId) {
-        memberRepository.findById(currentUserId)
-                .orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
-
+    public PostDeleteResponseDto deletePost(Long postId, Long currentUserId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new PostException(ErrorCode.POST_NOT_FOUND));
 
@@ -103,5 +98,7 @@ public class PostService {
 
         // OpenSearch 동기화를 위한 이벤트 발행
         eventPublisher.publishEvent(PostEvent.deleted(postId));
+
+        return PostDeleteResponseDto.success(postId, currentUserId);
     }
 }
