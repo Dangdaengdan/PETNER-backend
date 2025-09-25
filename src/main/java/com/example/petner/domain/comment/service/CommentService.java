@@ -31,11 +31,11 @@ public class CommentService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public CommentResponse createComment(Long postId, Long authorId, CommentCreateRequest request) {
+    public CommentResponse createComment(Long postId, Long currentUserId, CommentCreateRequest request) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new PostException(ErrorCode.POST_NOT_FOUND));
 
-        Member author = memberRepository.findById(authorId)
+        Member author = memberRepository.findById(currentUserId)
                 .orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
 
         Comment parentComment = null;
@@ -83,9 +83,14 @@ public class CommentService {
     }
 
     @Transactional
-    public CommentResponse updateComment(Long commentId, CommentUpdateRequest request) {
+    public CommentResponse updateComment(Long commentId, Long currentUserId, CommentUpdateRequest request) {
         Comment comment = commentRepository.findByIdWithMember(commentId)
                 .orElseThrow(() -> new CommentException(ErrorCode.COMMENT_NOT_FOUND));
+
+        // 댓글 작성자와 수정 요청자가 동일한지 확인
+        if (!comment.getMember().getMemberId().equals(currentUserId)) {
+            throw new CommentException(ErrorCode.COMMENT_ACCESS_DENIED);
+        }
 
         comment.update(request.getContent());
 
@@ -93,9 +98,14 @@ public class CommentService {
     }
 
     @Transactional
-    public void deleteComment(Long commentId) {
-        Comment comment = commentRepository.findById(commentId)
+    public void deleteComment(Long commentId, Long currentUserId) {
+        Comment comment = commentRepository.findByIdWithMember(commentId)
                 .orElseThrow(() -> new CommentException(ErrorCode.COMMENT_NOT_FOUND));
+
+        // 댓글 작성자와 삭제 요청자가 동일한지 확인
+        if (!comment.getMember().getMemberId().equals(currentUserId)) {
+            throw new CommentException(ErrorCode.COMMENT_ACCESS_DENIED);
+        }
 
         commentRepository.delete(comment);
     }
