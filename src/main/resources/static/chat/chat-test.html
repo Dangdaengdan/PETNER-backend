@@ -51,9 +51,12 @@
 <div class="container">
     <!-- 로그인 화면 -->
     <div id="login-area" class="area">
-        <h2>채팅 시스템 로그인</h2>
-        <input type="number" id="memberId" placeholder="로그인할 Member ID를 입력하세요 (예: 1)">
-        <button onclick="login()">로그인</button>
+        <h2>PETNER 채팅 시스템</h2>
+        <div class="alert alert-info">
+            현재 브라우저 세션에 로그인된 사용자로 자동 진입합니다.<br>
+            먼저 메인 사이트에서 로그인한 후 이 페이지에 접속해주세요.
+        </div>
+        <button onclick="enterChatSystem()" style="font-size: 18px; padding: 15px 30px;">채팅 시스템 진입</button>
     </div>
 
     <!-- 메인 채팅 화면 -->
@@ -101,6 +104,7 @@
 <script>
     const API_BASE_URL = "http://localhost:8080";
     let currentMemberId = null;
+    let currentSessionId = null; // 세션 ID 저장용
     let currentChatRoomId = null;
     let stompClient = null;
     let allUsers = [];
@@ -108,6 +112,7 @@
     let currentPage = 0; // 현재 페이지
     let pageSize = 50; // 페이지 크기
     let hasMoreMessages = true; // 더 많은 메시지가 있는지 여부
+    let displayedMessageIds = new Set(); // 이미 표시된 메시지 ID 추적
 
     function showArea(areaId) {
         document.querySelectorAll('.area').forEach(area => area.style.display = 'none');
@@ -144,32 +149,53 @@
         }
     }
 
-    async function login() {
-        const memberId = document.getElementById('memberId').value;
-        if (!memberId) {
-            showAlert("Member ID를 입력하세요.", 'error');
-            return;
+    async function enterChatSystem() {
+        try {
+            // 현재 로그인한 사용자 정보 가져오기
+            const userResponse = await fetch(`${API_BASE_URL}/api/v1/auth/kakao/member`, {
+                credentials: 'include'
+            });
+
+            if (!userResponse.ok) {
+                throw new Error('로그인이 필요합니다. 먼저 메인 사이트에서 로그인해주세요.');
+            }
+
+            const userData = await userResponse.json();
+            currentMemberId = userData.memberId;
+
+            console.log('Current Member ID set from API:', currentMemberId);
+
+            showArea('main-area');
+            await loadChatRooms();
+
+            showAlert(`채팅 시스템에 진입했습니다.`, 'success');
+
+        } catch (error) {
+            console.error('진입 오류:', error);
+            showAlert(error.message, 'error');
         }
-
-        currentMemberId = parseInt(memberId, 10);
-        document.getElementById('room-list-title').innerText = `내 채팅방 목록 (ID: ${currentMemberId})`;
-
-        showArea('main-area');
-        await loadChatRooms();
-
-        showAlert(`${currentMemberId}번 사용자로 로그인했습니다.`, 'success');
     }
 
-    function logout() {
+    async function logout() {
+        try {
+            // 실제 로그아웃 API 호출 (세션 삭제)
+            await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
+                method: 'POST',
+                credentials: 'include' // 세션 쿠키 포함
+            });
+        } catch (error) {
+            console.error('로그아웃 API 호출 오류:', error);
+        }
+
         if (stompClient) { stompClient.disconnect(); }
         currentMemberId = null;
+        currentSessionId = null;
         currentChatRoomId = null;
         stompClient = null;
-        document.getElementById('memberId').value = '';
         document.getElementById('otherMemberId').value = '';
         document.getElementById('dogId').value = '';
         showArea('login-area');
-        showAlert('로그아웃했습니다.', 'info');
+        showAlert('로그아웃했습니다. 메인 사이트에서도 로그아웃하는 것을 권장합니다.', 'info');
     }
 
     async function createChatRoomWithIds() {
@@ -187,8 +213,7 @@
         }
 
         const requestData = {
-            member1Id: currentMemberId,
-            member2Id: parseInt(otherMemberId),
+            otherMemberId: parseInt(otherMemberId),
             dogId: dogId ? parseInt(dogId) : null
         };
 
@@ -196,6 +221,7 @@
             const response = await fetch(`${API_BASE_URL}/api/v1/chat/rooms`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include', // 세션 쿠키 포함
                 body: JSON.stringify(requestData)
             });
 
@@ -232,10 +258,21 @@
         roomListDiv.innerHTML = '채팅방을 불러오는 중...';
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/chat/rooms/members/${currentMemberId}`);
-            if (!response.ok) throw new Error('채팅방 목록을 불러오는데 실패했습니다.');
+            const response = await fetch(`${API_BASE_URL}/api/v1/chat/rooms/rooms/my`, {
+                credentials: 'include' // 세션 쿠키 포함
+            });
+
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error('로그인이 필요합니다. 먼저 메인 사이트에서 로그인해주세요.');
+                }
+                throw new Error('채팅방 목록을 불러오는데 실패했습니다.');
+            }
 
             const rooms = await response.json();
+
+            document.getElementById('room-list-title').innerText = `내 채팅방 목록`;
+
             roomListDiv.innerHTML = '';
 
             if (rooms.length === 0) {
@@ -248,10 +285,21 @@
                 const roomDiv = document.createElement('div');
                 roomDiv.className = 'room-item';
 
-                // 채팅방 제목 생성
+                // 채팅방 제목 생성 (방어 코드 추가)
                 const titleDiv = document.createElement('div');
                 titleDiv.className = 'room-title';
-                let roomTitle = `${room.otherMemberInfo.nickname}님과의 대화`;
+
+                let otherNickname = '알 수 없음';
+                let otherMemberId = null;
+
+                if (room.otherMemberInfo && room.otherMemberInfo.nickname) {
+                    otherNickname = room.otherMemberInfo.nickname;
+                    otherMemberId = room.otherMemberInfo.memberId;
+                } else {
+                    console.warn('채팅방 ID', room.chatRoomId, '에서 상대방 정보를 찾을 수 없습니다:', room);
+                }
+
+                let roomTitle = `${otherNickname}님과의 대화`;
                 if (room.dogInfo && room.dogInfo.name) {
                     roomTitle += ` (🐶 ${room.dogInfo.name})`;
                 } else {
@@ -266,7 +314,9 @@
 
                 // 활성 멤버 수 가져오기 및 표시
                 try {
-                    const countResponse = await fetch(`${API_BASE_URL}/api/v1/chat/rooms/${room.chatRoomId}/members/count`);
+                    const countResponse = await fetch(`${API_BASE_URL}/api/v1/chat/rooms/${room.chatRoomId}/members/count`, {
+                        credentials: 'include' // 세션 쿠키 포함
+                    });
                     if (countResponse.ok) {
                         const countData = await countResponse.json();
                         const memberCountDiv = document.createElement('div');
@@ -284,7 +334,7 @@
                     roomDiv.appendChild(lastMessageDiv);
                 }
 
-                roomDiv.onclick = () => enterChatRoom(room.chatRoomId, room.otherMemberInfo.nickname);
+                roomDiv.onclick = () => enterChatRoom(room.chatRoomId, otherNickname, otherMemberId);
                 roomListDiv.appendChild(roomDiv);
             }
         } catch (error) {
@@ -303,16 +353,22 @@
         immediateRefreshChatRooms();
     }
 
-    async function enterChatRoom(chatRoomId, otherNickname) {
+    async function enterChatRoom(chatRoomId, otherNickname, otherMemberId = null) {
         currentChatRoomId = chatRoomId;
         currentPage = 0; // 페이지 초기화
         hasMoreMessages = true; // 더 많은 메시지 있음으로 초기화
+        displayedMessageIds.clear(); // 표시된 메시지 ID 초기화
 
-        document.getElementById('chat-with-title').innerText = `${otherNickname}님과의 채팅`;
+        // 방어 코드: otherNickname이 null이거나 undefined인 경우
+        const displayName = otherNickname || '알 수 없음';
+        document.getElementById('chat-with-title').innerText = `${displayName}님과의 채팅`;
         showArea('chat-area');
 
         const messagesDiv = document.getElementById('messages');
         messagesDiv.innerHTML = '<div class="alert alert-info">메시지를 불러오는 중...</div>';
+
+        // otherMemberId를 저장해서 메시지 식별에 사용
+        window.otherMemberId = otherMemberId;
 
         try {
             // 멤버별 가시 메시지 페이징 조회 API 사용
@@ -330,7 +386,8 @@
 
         try {
             const response = await fetch(
-                `${API_BASE_URL}/api/v1/chat/rooms/${currentChatRoomId}/messages/visible?memberId=${currentMemberId}&page=${currentPage}&size=${pageSize}`
+                `${API_BASE_URL}/api/v1/chat/rooms/${currentChatRoomId}/messages/visible?page=${currentPage}&size=${pageSize}`,
+                { credentials: 'include' } // 세션 쿠키 포함
             );
 
             if (!response.ok) {
@@ -338,6 +395,8 @@
             }
 
             const messages = await response.json();
+
+            // currentMemberId는 이미 API에서 설정되므로 추가 설정 불필요
 
             if (isInitialLoad) {
                 messagesDiv.innerHTML = '';
@@ -419,8 +478,9 @@
         if (!confirm('정말로 이 채팅방을 나가시겠습니까?')) return;
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/chat/rooms/${currentChatRoomId}/members/${currentMemberId}`, {
-                method: 'DELETE'
+            const response = await fetch(`${API_BASE_URL}/api/v1/chat/rooms/${currentChatRoomId}/leave`, {
+                method: 'DELETE',
+                credentials: 'include' // 세션 쿠키 포함
             });
 
             if (response.ok) {
@@ -437,18 +497,30 @@
     }
 
     function connectAndSubscribe() {
-        if (stompClient) { stompClient.disconnect(); }
+        if (stompClient) {
+            console.log('Disconnecting existing WebSocket connection');
+            stompClient.disconnect();
+        }
 
+        console.log('Connecting to WebSocket...');
         const socket = new SockJS(`${API_BASE_URL}/ws-stomp`);
         stompClient = Stomp.over(socket);
-        stompClient.debug = null; // STOMP 디버깅 메시지 비활성화
+        stompClient.debug = console.log; // STOMP 디버깅 메시지 활성화
 
         stompClient.connect({}, (frame) => {
-            console.log('WebSocket 연결됨:', frame);
+            console.log('WebSocket 연결 성공:', frame);
 
             // 현재 채팅방 구독
-            stompClient.subscribe(`/topic/chat/${currentChatRoomId}`, (message) => {
+            const subscription = `/topic/chat/${currentChatRoomId}`;
+            console.log('Subscribing to:', subscription);
+
+            stompClient.subscribe(subscription, (message) => {
+                console.log('WebSocket 메시지 수신:', message.body);
                 const messageData = JSON.parse(message.body);
+                console.log('Parsed message data:', messageData);
+
+                // currentMemberId는 이미 API에서 설정됨
+
                 displayMessage(messageData);
 
                 // 메시지 수신 시 채팅방 목록 새로고침 (최근 메시지로 인한 순서 변경)
@@ -460,31 +532,59 @@
         });
     }
 
-    function sendMessage(event) {
+    async function sendMessage(event) {
         event.preventDefault();
         const messageInput = document.getElementById('message-input');
         const content = messageInput.value.trim();
 
-        if (content && stompClient && stompClient.connected) {
-            const chatMessage = {
-                senderId: currentMemberId,
+        if (!content) return;
+
+        if (!stompClient || !stompClient.connected) {
+            showAlert('WebSocket 연결이 끊어졌습니다. 채팅방을 다시 입장해주세요.', 'error');
+            return;
+        }
+
+        // currentMemberId는 이미 진입 시점에서 API로 설정됨
+
+        // WebSocket을 통한 메시지 전송
+        try {
+            const messageData = {
                 content: content
+                // senderId는 서버에서 세션으로 자동 설정됨
             };
-            stompClient.send(`/app/chat/${currentChatRoomId}`, {}, JSON.stringify(chatMessage));
+
+            console.log('Sending WebSocket message:', messageData);
+            stompClient.send(`/app/chat/${currentChatRoomId}`, {}, JSON.stringify(messageData));
+
             messageInput.value = '';
 
             // 메시지 전송 후 채팅방 목록 새로고침 (최근 메시지로 인한 순서 변경)
             debouncedRefreshChatRooms();
-        } else if (!stompClient || !stompClient.connected) {
-            showAlert('채팅 연결이 끊어졌습니다. 다시 접속해주세요.', 'error');
+
+        } catch (error) {
+            console.error('WebSocket 메시지 전송 오류:', error);
+            showAlert('메시지 전송에 실패했습니다.', 'error');
         }
     }
 
     function displayMessage(message) {
+        // 중복 메시지 방지
+        if (message.messageId && displayedMessageIds.has(message.messageId)) {
+            console.log('Duplicate message ignored:', message.messageId);
+            return;
+        }
+
         const messagesDiv = document.getElementById('messages');
         const messageElement = document.createElement('div');
         messageElement.classList.add('message');
         messageElement.innerText = message.content;
+
+        console.log('Displaying message:', {
+            messageId: message.messageId,
+            senderId: message.senderId,
+            currentMemberId: currentMemberId,
+            isMine: message.senderId === currentMemberId
+        });
 
         if (message.senderId === currentMemberId) {
             messageElement.classList.add('sent');
@@ -492,11 +592,44 @@
             messageElement.classList.add('received');
         }
 
+        // 메시지 ID 추적
+        if (message.messageId) {
+            displayedMessageIds.add(message.messageId);
+        }
+
         messagesDiv.appendChild(messageElement);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
+    // 페이지 로드 시 자동으로 로그인 상태 체크
+    async function checkLoginStatus() {
+        try {
+            // 현재 사용자 정보 가져오기로 로그인 상태 확인
+            const userResponse = await fetch(`${API_BASE_URL}/api/v1/auth/kakao/member`, {
+                credentials: 'include'
+            });
+
+            if (userResponse.ok) {
+                const userData = await userResponse.json();
+                currentMemberId = userData.memberId;
+                console.log('Current Member ID set from auto-login:', currentMemberId);
+
+                showArea('main-area');
+                await loadChatRooms();
+
+                showAlert(`자동 진입했습니다.`, 'success');
+            }
+        } catch (error) {
+            // 로그인되지 않은 경우 로그인 화면 유지
+            console.log('자동 로그인 불가:', error.message);
+        }
+    }
+
     // 페이지 로드 시 실행
+    window.addEventListener('DOMContentLoaded', () => {
+        checkLoginStatus();
+    });
+
     window.addEventListener('beforeunload', () => {
         if (stompClient) {
             stompClient.disconnect();
