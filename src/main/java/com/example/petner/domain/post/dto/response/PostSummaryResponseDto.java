@@ -6,7 +6,7 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 @Getter
-public class PostSummaryResponse {
+public class PostSummaryResponseDto {
 
     private final Long postId;
     private final String title;
@@ -15,7 +15,7 @@ public class PostSummaryResponse {
     private final int viewCount;
     private final LocalDateTime createdAt;
 
-    public PostSummaryResponse(Post post) {
+    public PostSummaryResponseDto(Post post) {
         this.postId = post.getPostId();
         this.title = post.getTitle();
         this.thumbImageUrl = post.getThumbImageUrl();

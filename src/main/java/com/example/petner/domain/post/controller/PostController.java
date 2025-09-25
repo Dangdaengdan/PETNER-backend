@@ -1,9 +1,10 @@
 package com.example.petner.domain.post.controller;
 
-import com.example.petner.domain.post.dto.request.PostCreateRequest;
-import com.example.petner.domain.post.dto.request.PostUpdateRequest;
-import com.example.petner.domain.post.dto.response.PostResponse;
-import com.example.petner.domain.post.dto.response.PostSummaryResponse;
+import com.example.petner.domain.post.dto.request.PostCreateRequestDto;
+import com.example.petner.domain.post.dto.request.PostUpdateRequestDto;
+import com.example.petner.domain.post.dto.response.PostResponseDto;
+import com.example.petner.domain.post.dto.response.PostSummaryResponseDto;
+import com.example.petner.domain.post.dto.response.PostDeleteResponseDto;
 import com.example.petner.domain.post.service.PostService;
 import com.example.petner.search.document.PostDocument;
 import com.example.petner.search.service.PostSearchService;
@@ -38,8 +39,8 @@ public class PostController {
     @PostMapping
     @Operation(summary = "게시물 생성", description = "새로운 게시물을 생성합니다.")
     @ApiResponse(responseCode = "201", description = "게시물 생성 성공")
-    public ResponseEntity<PostResponse> createPost(@Valid @RequestBody PostCreateRequest request, @SessionMember SessionUser user) {
-        PostResponse response = postService.createPost(user.getMemberId(), request);
+    public ResponseEntity<PostResponseDto> createPost(@Valid @RequestBody PostCreateRequestDto request, @SessionMember SessionUser user) {
+        PostResponseDto response = postService.createPost(user.getMemberId(), request);
 
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
@@ -53,15 +54,15 @@ public class PostController {
     @GetMapping("/{postId}")
     @Operation(summary = "게시물 상세 조회", description = "특정 게시물 하나를 상세 조회합니다.")
     @ApiResponse(responseCode = "200", description = "게시물 조회 성공")
-    public ResponseEntity<PostResponse> getPost(@PathVariable Long postId) {
-        PostResponse response = postService.getPost(postId);
+    public ResponseEntity<PostResponseDto> getPost(@PathVariable Long postId) {
+        PostResponseDto response = postService.getPost(postId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping
     @Operation(summary = "게시물 목록 조회", description = "전체 게시물 목록을 페이징하여 조회합니다.")
     @ApiResponse(responseCode = "200", description = "게시물 목록 조회 성공")
-    public ResponseEntity<Page<PostSummaryResponse>> getPosts(
+    public ResponseEntity<Page<PostSummaryResponseDto>> getPosts(
             @Parameter(description = "페이지 번호 (0부터 시작)", example = "0") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "페이지 크기", example = "10") @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "정렬 방식 (예: createdAt,desc)", example = "createdAt,desc") @RequestParam(defaultValue = "createdAt,desc") String sort) {
@@ -71,24 +72,24 @@ public class PostController {
             ? Sort.Direction.ASC : Sort.Direction.DESC;
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortParams[0]));
-        Page<PostSummaryResponse> response = postService.getPosts(pageable);
+        Page<PostSummaryResponseDto> response = postService.getPosts(pageable);
         return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{postId}")
     @Operation(summary = "게시물 수정", description = "특정 게시물을 수정합니다.")
     @ApiResponse(responseCode = "200", description = "게시물 수정 성공")
-    public ResponseEntity<PostResponse> updatePost(@PathVariable Long postId, @Valid @RequestBody PostUpdateRequest request, @SessionMember SessionUser user) {
-        PostResponse response = postService.updatePost(postId, request, user.getMemberId());
+    public ResponseEntity<PostResponseDto> updatePost(@PathVariable Long postId, @Valid @RequestBody PostUpdateRequestDto request, @SessionMember SessionUser user) {
+        PostResponseDto response = postService.updatePost(postId, request, user.getMemberId());
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{postId}")
     @Operation(summary = "게시물 삭제", description = "특정 게시물을 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "게시물 삭제 성공")
-    public ResponseEntity<String> deletePost(@PathVariable Long postId, @SessionMember SessionUser user) {
-        postService.deletePost(postId, user.getMemberId());
-        return ResponseEntity.ok("게시물이 성공적으로 삭제되었습니다.");
+    public ResponseEntity<PostDeleteResponseDto> deletePost(@PathVariable Long postId, @SessionMember SessionUser user) {
+        PostDeleteResponseDto response = postService.deletePost(postId, user.getMemberId());
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/search")
