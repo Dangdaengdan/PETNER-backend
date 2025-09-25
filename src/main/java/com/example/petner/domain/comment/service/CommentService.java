@@ -100,16 +100,29 @@ public class CommentService {
 
     @Transactional
     public CommentDeleteResponseDto deleteComment(Long commentId, Long currentUserId) {
+        Comment comment = validateDeletePermission(commentId, currentUserId);
+        executeDelete(comment);
+        return CommentDeleteResponseDto.success(commentId, currentUserId);
+    }
+
+    private Comment validateDeletePermission(Long commentId, Long currentUserId) {
         Comment comment = commentRepository.findByIdWithMember(commentId)
                 .orElseThrow(() -> new CommentException(ErrorCode.COMMENT_NOT_FOUND));
 
-        // 댓글 작성자와 삭제 요청자가 동일한지 확인
         if (!comment.getMember().getMemberId().equals(currentUserId)) {
             throw new CommentException(ErrorCode.COMMENT_ACCESS_DENIED);
         }
 
-        commentRepository.delete(comment);
+        return comment;
+    }
 
-        return CommentDeleteResponseDto.success(commentId, currentUserId);
+    private void executeDelete(Comment comment) {
+        boolean hasReplies = commentRepository.existsActiveReplies(comment);
+
+        if (hasReplies) {
+            comment.delete();
+        } else {
+            commentRepository.delete(comment);
+        }
     }
 }
