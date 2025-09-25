@@ -31,11 +31,11 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler({
-            MemberException.class, 
-            DogException.class, 
-            PostException.class, 
-            ChatException.class, 
-            ShelterException.class
+            MemberException.class,
+            DogException.class,
+            PostException.class,
+            ChatException.class,
+            CommentException.class
     })
     public ResponseEntity<ErrorPayload> handleCustomException(RuntimeException ex, HttpServletRequest request) {
         ErrorCode errorCode = extractErrorCode(ex);
