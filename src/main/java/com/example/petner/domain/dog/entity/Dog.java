@@ -95,4 +95,20 @@ public class Dog {
         this.member = member;
         this.shelter = shelter;
     }
+
+    public void updateDogInfo(String name, Breed breed, String birthDate, Gender gender, DogSize dogSize,
+                             BigDecimal weight, String healthStatus, String description, AdoptionStatus adoptionStatus,
+                             String imageUrl, Shelter shelter) {
+        this.name = name;
+        this.breed = breed;
+        this.birthDate = birthDate;
+        this.gender = gender;
+        this.dogSize = dogSize;
+        this.weight = weight;
+        this.healthStatus = healthStatus;
+        this.description = description;
+        this.adoptionStatus = adoptionStatus;
+        this.imageUrl = imageUrl;
+        this.shelter = shelter;
+    }
 }
