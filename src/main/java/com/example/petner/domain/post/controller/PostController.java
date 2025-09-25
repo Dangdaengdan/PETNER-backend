@@ -7,6 +7,8 @@ import com.example.petner.domain.post.dto.response.PostSummaryResponse;
 import com.example.petner.domain.post.service.PostService;
 import com.example.petner.search.document.PostDocument;
 import com.example.petner.search.service.PostSearchService;
+import com.example.petner.global.annotation.SessionMember;
+import com.example.petner.global.dto.SessionUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -36,10 +38,8 @@ public class PostController {
     @PostMapping
     @Operation(summary = "게시물 생성", description = "새로운 게시물을 생성합니다.")
     @ApiResponse(responseCode = "201", description = "게시물 생성 성공")
-    public ResponseEntity<PostResponse> createPost(@Valid @RequestBody PostCreateRequest request) {
-        // TODO: 추후 인증 기능이 구현되면, 현재 로그인한 사용자의 ID를 가져와서 사용해야 합니다.
-        Long currentMemberId = 1L;
-        PostResponse response = postService.createPost(currentMemberId, request);
+    public ResponseEntity<PostResponse> createPost(@Valid @RequestBody PostCreateRequest request, @SessionMember SessionUser user) {
+        PostResponse response = postService.createPost(user.getMemberId(), request);
 
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
@@ -78,18 +78,16 @@ public class PostController {
     @PatchMapping("/{postId}")
     @Operation(summary = "게시물 수정", description = "특정 게시물을 수정합니다.")
     @ApiResponse(responseCode = "200", description = "게시물 수정 성공")
-    public ResponseEntity<PostResponse> updatePost(@PathVariable Long postId, @Valid @RequestBody PostUpdateRequest request) {
-        // TODO: 추후 인증 기능이 구현되면, 게시물 작성자와 현재 로그인한 사용자가 동일한지 확인해야 합니다.
-        PostResponse response = postService.updatePost(postId, request);
+    public ResponseEntity<PostResponse> updatePost(@PathVariable Long postId, @Valid @RequestBody PostUpdateRequest request, @SessionMember SessionUser user) {
+        PostResponse response = postService.updatePost(postId, request, user.getMemberId());
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{postId}")
     @Operation(summary = "게시물 삭제", description = "특정 게시물을 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "게시물 삭제 성공")
-    public ResponseEntity<String> deletePost(@PathVariable Long postId) {
-        // TODO: 추후 인증 기능이 구현되면, 게시물 작성자와 현재 로그인한 사용자가 동일한지 확인해야 합니다.
-        postService.deletePost(postId);
+    public ResponseEntity<String> deletePost(@PathVariable Long postId, @SessionMember SessionUser user) {
+        postService.deletePost(postId, user.getMemberId());
         return ResponseEntity.ok("게시물이 성공적으로 삭제되었습니다.");
     }
 
