@@ -24,7 +24,9 @@ public enum ErrorCode {
     MEMBER_NOT_FOUND("404-MB01", "사용자 정보를 찾을 수 없습니다", HttpStatus.NOT_FOUND),
     MEMBER_ALREADY_EXISTS("409-MB02", "이미 존재하는 사용자입니다", HttpStatus.CONFLICT),
     MEMBER_EMAIL_DUPLICATE("409-MB03", "이미 사용 중인 이메일입니다", HttpStatus.CONFLICT),
-    MEMBER_CREATION_FAILED("500-MB04", "사용자 생성 중 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR),
+    MEMBER_NICKNAME_DUPLICATE("409-MB04", "이미 사용 중인 닉네임입니다", HttpStatus.CONFLICT),
+    MEMBER_PROFILE_INCOMPLETE("400-MB05", "프로필 정보가 완성되지 않았습니다", HttpStatus.BAD_REQUEST),
+    MEMBER_CREATION_FAILED("500-MB06", "사용자 생성 중 오류가 발생했습니다", HttpStatus.INTERNAL_SERVER_ERROR),
 
     /* 강아지 관련 */
     DOG_NOT_FOUND("404-DG01", "강아지 정보를 찾을 수 없습니다", HttpStatus.NOT_FOUND),
