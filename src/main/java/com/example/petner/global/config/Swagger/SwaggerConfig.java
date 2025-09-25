@@ -52,21 +52,32 @@ public class SwaggerConfig {
     
     /**
      * @SessionMember 파라미터를 스웨거에서 숨기는 customizer
+     * 
+     * 수정 이유:
+     * 1. handlerMethod 파라미터와 operation 파라미터의 인덱스 불일치 문제 해결
+     * 2. 순차 제거 시 인덱스 변경으로 인한 누락 문제 방지
+     * 3. 파라미터 이름 기반 매칭으로 정확성 향상
      */
     @Bean
     public OperationCustomizer operationCustomizer() {
         return (operation, handlerMethod) -> {
-            // 메서드의 모든 파라미터 검사
-            Parameter[] parameters = handlerMethod.getMethod().getParameters();
+            if (operation.getParameters() == null) {
+                return operation;
+            }
             
-            for (int i = 0; i < parameters.length; i++) {
-                Parameter parameter = parameters[i];
-                
-                // @SessionMember 애노테이션이 있는 파라미터는 스웨거에서 제거
-                if (parameter.isAnnotationPresent(SessionMember.class)) {
-                    if (operation.getParameters() != null && i < operation.getParameters().size()) {
-                        operation.getParameters().remove(i);
-                    }
+            // 메서드의 모든 파라미터 검사
+            Parameter[] methodParameters = handlerMethod.getMethod().getParameters();
+            
+            // @SessionMember 애노테이션이 있는 파라미터 이름 수집
+            for (Parameter methodParam : methodParameters) {
+                if (methodParam.isAnnotationPresent(SessionMember.class)) {
+                    String paramName = methodParam.getName();
+                    
+                    // 파라미터 이름으로 OpenAPI 파라미터 찾아서 제거
+                    operation.getParameters().removeIf(openApiParam -> 
+                        paramName.equals(openApiParam.getName()) || 
+                        "user".equals(openApiParam.getName())  // SessionUser의 일반적인 파라미터명
+                    );
                 }
             }
             
