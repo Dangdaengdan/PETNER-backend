@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DogRepository extends JpaRepository<Dog, Long> {
@@ -25,4 +26,26 @@ public interface DogRepository extends JpaRepository<Dog, Long> {
 
     @Query("SELECT d FROM Dog d WHERE d.member.location.locationId = :locationId AND d.adoptionStatus = :status")
     List<Dog> findByLocationAndAdoptionStatus(@Param("locationId") Long locationId, @Param("status") AdoptionStatus status);
+
+    /**
+     * N+1 문제 해결을 위한 페치 조인 - 전체 목록 조회
+     * Dog와 연관된 Breed, Member, Shelter를 한 번의 쿼리로 조회
+     */
+    @Query("SELECT d FROM Dog d " +
+           "JOIN FETCH d.breed " +
+           "JOIN FETCH d.member " +
+           "LEFT JOIN FETCH d.shelter " +
+           "ORDER BY d.createdAt DESC")
+    List<Dog> findAllWithAssociations();
+
+    /**
+     * N+1 문제 해결을 위한 페치 조인 - 개별 조회
+     * Dog와 연관된 Breed, Member, Shelter를 한 번의 쿼리로 조회
+     */
+    @Query("SELECT d FROM Dog d " +
+           "JOIN FETCH d.breed " +
+           "JOIN FETCH d.member " +
+           "LEFT JOIN FETCH d.shelter " +
+           "WHERE d.dogId = :dogId")
+    Optional<Dog> findByIdWithAssociations(@Param("dogId") Long dogId);
 }
