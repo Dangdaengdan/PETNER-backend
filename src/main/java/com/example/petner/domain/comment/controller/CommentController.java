@@ -4,6 +4,8 @@ import com.example.petner.domain.comment.dto.request.CommentCreateRequest;
 import com.example.petner.domain.comment.dto.request.CommentUpdateRequest;
 import com.example.petner.domain.comment.dto.response.CommentResponse;
 import com.example.petner.domain.comment.service.CommentService;
+import com.example.petner.global.annotation.SessionMember;
+import com.example.petner.global.dto.SessionUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -28,12 +30,10 @@ public class CommentController {
     @ApiResponse(responseCode = "201", description = "댓글 생성 성공")
     public ResponseEntity<CommentResponse> createComment(
             @Parameter(description = "게시물 ID") @PathVariable Long postId,
-            @Valid @RequestBody CommentCreateRequest request) {
+            @Valid @RequestBody CommentCreateRequest request,
+            @SessionMember SessionUser user) {
 
-        // TODO: 추후 인증 기능이 구현되면, 현재 로그인한 사용자의 ID를 가져와서 사용해야 합니다.
-        Long currentMemberId = 1L;
-        CommentResponse response = commentService.createComment(postId, currentMemberId, request);
-
+        CommentResponse response = commentService.createComment(postId, user.getMemberId(), request);
         return ResponseEntity.created(null).body(response);
     }
 
@@ -52,10 +52,10 @@ public class CommentController {
     @ApiResponse(responseCode = "200", description = "댓글 수정 성공")
     public ResponseEntity<CommentResponse> updateComment(
             @Parameter(description = "댓글 ID") @PathVariable Long commentId,
-            @Valid @RequestBody CommentUpdateRequest request) {
+            @Valid @RequestBody CommentUpdateRequest request,
+            @SessionMember SessionUser user) {
 
-        // TODO: 추후 인증 기능이 구현되면, 댓글 작성자와 현재 로그인한 사용자가 동일한지 확인해야 합니다.
-        CommentResponse response = commentService.updateComment(commentId, request);
+        CommentResponse response = commentService.updateComment(commentId, user.getMemberId(), request);
         return ResponseEntity.ok(response);
     }
 
@@ -63,10 +63,10 @@ public class CommentController {
     @Operation(summary = "댓글 삭제", description = "특정 댓글을 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "댓글 삭제 성공")
     public ResponseEntity<String> deleteComment(
-            @Parameter(description = "댓글 ID") @PathVariable Long commentId) {
+            @Parameter(description = "댓글 ID") @PathVariable Long commentId,
+            @SessionMember SessionUser user) {
 
-        // TODO: 추후 인증 기능이 구현되면, 댓글 작성자와 현재 로그인한 사용자가 동일한지 확인해야 합니다.
-        commentService.deleteComment(commentId);
+        commentService.deleteComment(commentId, user.getMemberId());
         return ResponseEntity.ok("댓글이 성공적으로 삭제되었습니다.");
     }
 }

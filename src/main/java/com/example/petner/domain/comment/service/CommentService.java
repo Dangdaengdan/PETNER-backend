@@ -83,9 +83,18 @@ public class CommentService {
     }
 
     @Transactional
-    public CommentResponse updateComment(Long commentId, CommentUpdateRequest request) {
+    public CommentResponse updateComment(Long commentId, Long currentUserId, CommentUpdateRequest request) {
+        // 현재 사용자가 존재하는지 확인
+        memberRepository.findById(currentUserId)
+                .orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
+
         Comment comment = commentRepository.findByIdWithMember(commentId)
                 .orElseThrow(() -> new CommentException(ErrorCode.COMMENT_NOT_FOUND));
+
+        // 댓글 작성자와 수정 요청자가 동일한지 확인
+        if (!comment.getMember().getMemberId().equals(currentUserId)) {
+            throw new CommentException(ErrorCode.COMMENT_ACCESS_DENIED);
+        }
 
         comment.update(request.getContent());
 
@@ -93,9 +102,18 @@ public class CommentService {
     }
 
     @Transactional
-    public void deleteComment(Long commentId) {
-        Comment comment = commentRepository.findById(commentId)
+    public void deleteComment(Long commentId, Long currentUserId) {
+        // 현재 사용자가 존재하는지 확인
+        memberRepository.findById(currentUserId)
+                .orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
+
+        Comment comment = commentRepository.findByIdWithMember(commentId)
                 .orElseThrow(() -> new CommentException(ErrorCode.COMMENT_NOT_FOUND));
+
+        // 댓글 작성자와 삭제 요청자가 동일한지 확인
+        if (!comment.getMember().getMemberId().equals(currentUserId)) {
+            throw new CommentException(ErrorCode.COMMENT_ACCESS_DENIED);
+        }
 
         commentRepository.delete(comment);
     }
