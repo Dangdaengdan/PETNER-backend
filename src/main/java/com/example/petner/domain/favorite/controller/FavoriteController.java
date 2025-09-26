@@ -76,7 +76,36 @@ public class FavoriteController {
     }
 
     /**
-     * 내 즐겨찾기 목록 조회 API
+     * 내 즐겨찾기 목록 조회 API (페이징)
+     *
+     * @param user 세션에서 자동 주입되는 로그인 사용자 정보
+     * @param page 페이지 번호 (선택, 기본값: 0)
+     * @param size 페이지 크기 (선택, 기본값: 10)
+     * @return 즐겨찾기 목록 (200 OK)
+     *
+     * 비즈니스 로직:
+     * 1. 세션에서 로그인 사용자 정보 자동 추출
+     * 2. 해당 사용자의 즐겨찾기를 페이징하여 조회
+     * 3. 강아지 상세 정보와 함께 반환
+     * 4. N+1 문제 방지를 위한 효율적인 조회 수행
+     * 5. 최신 즐겨찾기순으로 정렬하여 반환
+     */
+    @GetMapping("/my")
+    @Operation(summary = "내 즐겨찾기 목록 조회 (페이징 o)", description = "로그인한 사용자의 즐겨찾기 목록을 페이징하여 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "즐겨찾기 목록 조회 성공")
+    public ResponseEntity<List<FavoriteListResponseDto>> getMyFavorites(
+            @SessionMember SessionUser user,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        List<FavoriteListResponseDto> favorites = favoriteQueryService.getMemberFavorites(user.getMemberId(), page, size);
+        return ResponseEntity.ok(favorites);
+    }
+
+    /**
+     * 내 즐겨찾기 목록 전체 조회 API (페이징 없음)
+     *
+     * 프론트엔드 테스트용 엔드포인트
+     * 실제 프로덕션에서는 위의 페이징 API 사용 권장
      *
      * @param user 세션에서 자동 주입되는 로그인 사용자 정보
      * @return 즐겨찾기 목록 (200 OK)
@@ -87,10 +116,10 @@ public class FavoriteController {
      * 3. 강아지 상세 정보와 함께 반환
      * 4. N+1 문제 방지를 위한 효율적인 조회 수행
      */
-    @GetMapping("/my")
-    @Operation(summary = "내 즐겨찾기 목록 조회", description = "로그인한 사용자의 즐겨찾기 목록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "즐겨찾기 목록 조회 성공")
-    public ResponseEntity<List<FavoriteListResponseDto>> getMyFavorites(@SessionMember SessionUser user) {
+    @GetMapping("/my/all")
+    @Operation(summary = "내 즐겨찾기 목록 전체 조회 (페이징 x)", description = "로그인한 사용자의 전체 즐겨찾기 목록을 조회합니다(디버깅용).")
+    @ApiResponse(responseCode = "200", description = "즐겨찾기 목록 전체 조회 성공")
+    public ResponseEntity<List<FavoriteListResponseDto>> getAllMyFavorites(@SessionMember SessionUser user) {
         List<FavoriteListResponseDto> favorites = favoriteQueryService.getMemberFavorites(user.getMemberId());
         return ResponseEntity.ok(favorites);
     }
