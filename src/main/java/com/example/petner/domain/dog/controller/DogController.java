@@ -180,7 +180,7 @@ public class  DogController {
             @Parameter(description = "검색 키워드", example = "말티즈")
             @RequestParam(required = false) String q,
 
-            @Parameter(description = "견종 크기", example = "SMALL")
+            @Parameter(description = "견종 크기", example = "소형")
             @RequestParam(required = false) DogSize dogSize,
 
             @Parameter(description = "견종명", example = "말티즈")
@@ -192,7 +192,7 @@ public class  DogController {
             @Parameter(description = "지역", example = "서울")
             @RequestParam(required = false) String location,
 
-            @Parameter(description = "입양 상태", example = "AVAILABLE")
+            @Parameter(description = "입양 상태", example = "입양_가능")
             @RequestParam(required = false) AdoptionStatus adoptionStatus,
 
             @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
