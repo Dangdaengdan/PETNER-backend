@@ -35,7 +35,9 @@ public class GlobalExceptionHandler {
             DogException.class,
             PostException.class,
             ChatException.class,
-            CommentException.class
+            CommentException.class,
+            ShelterException.class,
+            FavoriteException.class
     })
     public ResponseEntity<ErrorPayload> handleCustomException(RuntimeException ex, HttpServletRequest request) {
         ErrorCode errorCode = extractErrorCode(ex);
