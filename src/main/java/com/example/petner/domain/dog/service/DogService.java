@@ -14,6 +14,9 @@ import com.example.petner.global.exception.ErrorCode;
 import com.example.petner.global.exception.customException.DogException;
 import com.example.petner.search.event.DogEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +38,6 @@ public class DogService {
     private final DogRepository dogRepository;
     private final DogValidator dogValidator;
     private final DogUpdater dogUpdater;
-    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 유기견 등록
@@ -82,7 +84,32 @@ public class DogService {
     }
 
     /**
-     * 유기견 목록 조회
+     * 유기견 목록 조회 (페이징)
+     *
+     * @param page 페이지 번호 (0부터 시작)
+     * @param size 페이지 크기
+     * @return 유기견 목록 (최신 등록순 정렬)
+     *
+     * 비즈니스 로직:
+     * 1. N+1 문제 해결을 위한 페치 조인 사용
+     * 2. 페이징 처리로 성능 최적화
+     * 3. 최신 등록순으로 정렬하여 반환
+     */
+    public List<DogListResponseDto> getDogs(int page, int size) {
+        // 페이징 설정 (최신 등록순 정렬)
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        // 페이징된 유기견 조회 (N+1 문제 해결)
+        List<Dog> dogs = dogRepository.findAllWithAssociationsPaging(pageable);
+
+        return dogs.stream()
+                .map(DogListResponseDto::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 유기견 목록 조회 (전체 - 페이징 없음)
      *
      * @return 전체 유기견 목록 (최신 등록순 정렬)
      */

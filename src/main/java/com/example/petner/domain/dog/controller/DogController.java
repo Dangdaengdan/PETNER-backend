@@ -63,7 +63,35 @@ public class  DogController {
     }
 
     /**
-     * 유기견 목록 조회 API
+     * 유기견 목록 조회 API (페이징)
+     *
+     * @param page 페이지 번호 (선택, 기본값: 0)
+     * @param size 페이지 크기 (선택, 기본값: 10)
+     * @return 유기견 목록 (200 OK)
+     *
+     * 비즈니스 로직:
+     * 1. 데이터베이스에서 모든 유기견 정보를 페이징하여 조회
+     * 2. N+1 문제 해결을 위한 페치 조인 적용
+     * 3. 최신 등록순으로 정렬하여 반환
+     * 4. 페이징 처리로 성능 최적화
+     */
+    @GetMapping
+    @Operation(summary = "유기견 목록 조회 (페이징 o)", description = "유기견 목록을 페이징하여 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "유기견 목록 조회 성공")
+    public ResponseEntity<List<DogListResponseDto>> getDogs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        // 페이징된 유기견 목록 조회
+        List<DogListResponseDto> dogs = dogService.getDogs(page, size);
+        return ResponseEntity.ok(dogs);
+    }
+
+    /**
+     * 전체 유기견 목록 조회 API (페이징 없음)
+     *
+     * 프론트엔드 테스트용 엔드포인트
+     * 실제 프로덕션에서는 위의 페이징 API 사용 권장
      *
      * @return 전체 유기견 목록 (200 OK)
      *
@@ -71,10 +99,11 @@ public class  DogController {
      * 1. 데이터베이스에서 모든 유기견 정보 조회
      * 2. 최신 등록순으로 정렬
      * 3. 목록 형태의 간소화된 정보 반환
+     * 4. N+1 문제 해결을 위한 페치 조인 적용
      */
-    @GetMapping
-    @Operation(summary = "유기견 목록 조회", description = "전체 유기견 목록을 조회합니다.")
-    @ApiResponse(responseCode = "200", description = "유기견 목록 조회 성공")
+    @GetMapping("/all")
+    @Operation(summary = "유기견 목록 전체 조회 (페이징 x)", description = "전체 유기견 목록을 조회합니다(디버깅용)")
+    @ApiResponse(responseCode = "200", description = "유기견 목록 전체 조회 성공")
     public ResponseEntity<List<DogListResponseDto>> getAllDogs() {
         List<DogListResponseDto> dogs = dogService.getAllDogs();
         return ResponseEntity.ok(dogs);
