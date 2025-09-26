@@ -20,7 +20,7 @@ public class CommentResponseDto {
 
     public CommentResponseDto(Comment comment) {
         this.commentId = comment.getCommentId();
-        this.content = comment.getContent();
+        this.content = comment.isDeleted() ? "삭제된 댓글입니다." : comment.getContent();
         this.authorNickname = comment.getMember().getNickname();
         this.createdAt = comment.getCreatedAt();
         this.updatedAt = comment.getUpdatedAt();

@@ -4,6 +4,7 @@ import com.example.petner.domain.member.entity.Member;
 import com.example.petner.domain.post.entity.Post;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,6 +19,8 @@ import java.util.List;
 @Table(name = "comments")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 public class Comment {
 
     @Id
@@ -36,6 +39,9 @@ public class Comment {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
@@ -48,13 +54,6 @@ public class Comment {
     @JoinColumn(name = "parent_comment_id")
     private Comment parentComment;
 
-    @Builder
-    public Comment(String content, Post post, Member member, Comment parentComment) {
-        this.content = content;
-        this.post = post;
-        this.member = member;
-        this.parentComment = parentComment;
-    }
 
     public void update(String content) {
         this.content = content;
@@ -62,5 +61,17 @@ public class Comment {
 
     public boolean isReply() {
         return this.parentComment != null;
+    }
+
+    public boolean isNestedReply() {
+        return this.parentComment != null && this.parentComment.isReply();
+    }
+
+    public boolean isDeleted() {
+        return this.deletedAt != null;
+    }
+
+    public void delete() {
+        this.deletedAt = LocalDateTime.now();
     }
 }

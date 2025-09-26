@@ -21,17 +21,20 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     @Query("SELECT c FROM Comment c JOIN FETCH c.member WHERE c.post = :post AND c.parentComment IS NULL ORDER BY c.createdAt ASC")
     List<Comment> findParentCommentsByPost(@Param("post") Post post);
 
-    @Query("SELECT c FROM Comment c JOIN FETCH c.member WHERE c.parentComment = :parentComment ORDER BY c.createdAt ASC")
+    @Query("SELECT c FROM Comment c JOIN FETCH c.member WHERE c.parentComment = :parentComment " +
+           "AND c.deletedAt IS NULL ORDER BY c.createdAt ASC")
     List<Comment> findRepliesByParentComment(@Param("parentComment") Comment parentComment);
 
-    @Query("SELECT c FROM Comment c JOIN FETCH c.member WHERE c.post = :post ORDER BY c.createdAt ASC")
+    @Query("SELECT c FROM Comment c JOIN FETCH c.member WHERE c.post = :post " +
+           "AND (c.deletedAt IS NULL OR (c.deletedAt IS NOT NULL AND EXISTS " +
+           "(SELECT 1 FROM Comment r WHERE r.parentComment = c AND r.deletedAt IS NULL))) " +
+           "ORDER BY c.createdAt ASC")
     List<Comment> findByPostOrderByCreatedAtAsc(@Param("post") Post post);
 
     @Query("SELECT c FROM Comment c JOIN FETCH c.member WHERE c.commentId = :commentId")
     Optional<Comment> findByIdWithMember(@Param("commentId") Long commentId);
 
-    @Query("SELECT c FROM Comment c JOIN FETCH c.member JOIN FETCH c.post WHERE c.commentId = :commentId")
-    Optional<Comment> findByIdWithMemberAndPost(@Param("commentId") Long commentId);
 
-    Long countByPost(Post post);
+    @Query("SELECT COUNT(c) > 0 FROM Comment c WHERE c.parentComment = :parentComment AND c.deletedAt IS NULL")
+    boolean existsActiveReplies(@Param("parentComment") Comment parentComment);
 }
