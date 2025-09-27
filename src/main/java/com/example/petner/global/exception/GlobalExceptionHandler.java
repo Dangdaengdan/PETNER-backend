@@ -37,6 +37,7 @@ public class GlobalExceptionHandler {
             ChatException.class,
             CommentException.class,
             ShelterException.class,
+            LocationException.class,
             FavoriteException.class,
             UploadException.class
     })
