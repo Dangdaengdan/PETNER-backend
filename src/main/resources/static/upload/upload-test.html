@@ -98,6 +98,15 @@
     <div class="container">
         <h1>🚀 GCP Storage Upload Test</h1>
 
+        <!-- 로그인 섹션 -->
+        <div class="section">
+            <h2>🔐 로그인</h2>
+            <div id="loginStatus">로그인 상태 확인 중...</div>
+            <button onclick="checkLogin()" id="checkLoginBtn">로그인 상태 확인</button>
+            <button onclick="kakaoLogin()" id="loginBtn" style="display:none;">카카오 로그인</button>
+            <button onclick="logout()" id="logoutBtn" style="display:none;">로그아웃</button>
+        </div>
+
         <!-- 업로드 섹션 -->
         <div class="section">
             <h2>📤 파일 업로드</h2>
@@ -118,6 +127,72 @@
 
     <script>
         const API_BASE = 'http://localhost:8080/api/v1/upload';
+        const AUTH_API_BASE = 'http://localhost:8080/api/v1/auth/kakao';
+        const DOG_API_BASE = 'http://localhost:8080/api/v1/dogs';
+
+        // 페이지 로드 시 로그인 상태 확인
+        window.addEventListener('load', checkLogin);
+
+        // 로그인 상태 확인
+        async function checkLogin() {
+            try {
+                const response = await fetch(`${AUTH_API_BASE}/session`, {
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    updateLoginStatus(data.authenticated);
+                } else {
+                    updateLoginStatus(false);
+                }
+            } catch (error) {
+                console.error('로그인 상태 확인 실패:', error);
+                updateLoginStatus(false);
+            }
+        }
+
+        // 로그인 상태 UI 업데이트
+        function updateLoginStatus(isAuthenticated) {
+            const loginStatus = document.getElementById('loginStatus');
+            const loginBtn = document.getElementById('loginBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            if (isAuthenticated) {
+                loginStatus.innerHTML = '<span style="color: green;">✅ 로그인 됨</span>';
+                loginBtn.style.display = 'none';
+                logoutBtn.style.display = 'inline-block';
+            } else {
+                loginStatus.innerHTML = '<span style="color: red;">❌ 로그인 필요</span>';
+                loginBtn.style.display = 'inline-block';
+                logoutBtn.style.display = 'none';
+            }
+        }
+
+        // 카카오 로그인
+        function kakaoLogin() {
+            window.location.href = `${AUTH_API_BASE}/login`;
+        }
+
+        // 로그아웃
+        async function logout() {
+            try {
+                const response = await fetch(`${AUTH_API_BASE}/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    showResult(document.getElementById('loginStatus'), '로그아웃 성공', 'success');
+                    updateLoginStatus(false);
+                } else {
+                    showResult(document.getElementById('loginStatus'), '로그아웃 실패', 'error');
+                }
+            } catch (error) {
+                console.error('로그아웃 실패:', error);
+                showResult(document.getElementById('loginStatus'), '로그아웃 실패', 'error');
+            }
+        }
 
         // 파일 업로드 함수
         async function uploadFile() {
@@ -139,7 +214,9 @@
                 // 1. Presigned URL 요청
                 showResult(resultDiv, '업로드 URL 생성 중...', 'info');
 
-                const urlResponse = await fetch(`${API_BASE}/presigned-url?fileName=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(file.type)}`);
+                const urlResponse = await fetch(`${API_BASE}/presigned-url?fileName=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(file.type)}`, {
+                    credentials: 'include'
+                });
 
                 if (!urlResponse.ok) {
                     const errorData = await urlResponse.json();
@@ -203,7 +280,9 @@
             try {
                 showResult(resultDiv, '다운로드 URL 생성 중...', 'info');
 
-                const response = await fetch(`${API_BASE}/presigned-url/download?objectName=${encodeURIComponent(objectNameInput.value.trim())}`);
+                const response = await fetch(`${API_BASE}/presigned-url/download?objectName=${encodeURIComponent(objectNameInput.value.trim())}`, {
+                    credentials: 'include'
+                });
 
                 if (!response.ok) {
                     const errorData = await response.json();

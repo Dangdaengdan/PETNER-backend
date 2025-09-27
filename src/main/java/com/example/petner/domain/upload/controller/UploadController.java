@@ -2,6 +2,8 @@ package com.example.petner.domain.upload.controller;
 
 import com.example.petner.domain.upload.dto.response.DownloadUrlResponseDto;
 import com.example.petner.domain.upload.dto.response.UploadUrlResponseDto;
+import com.example.petner.global.annotation.SessionMember;
+import com.example.petner.global.dto.SessionUser;
 import com.example.petner.global.exception.ErrorCode;
 import com.example.petner.global.exception.customException.UploadException;
 import com.google.cloud.storage.BlobInfo;
@@ -31,7 +33,9 @@ public class UploadController {
     // Presigned URL 생성 (파일 업로드)
     @GetMapping("/presigned-url")
     public ResponseEntity<UploadUrlResponseDto> generatePresignedUrl(
-            @RequestParam String fileName, @RequestParam(required = false) String fileType) {
+            @RequestParam String fileName,
+            @RequestParam(required = false) String fileType,
+            @SessionMember SessionUser user) {
         // 기본값으로 image/* 만 허용
         if (fileType == null || fileType.isBlank() || !fileType.startsWith("image/")) {
             throw new UploadException(ErrorCode.UPLOAD_INVALID_FILE_TYPE);
@@ -56,7 +60,8 @@ public class UploadController {
     // Presigned URL 생성 (파일 로드/다운로드)
     @GetMapping("/presigned-url/download")
     public ResponseEntity<DownloadUrlResponseDto> generatePresignedGetUrl(
-            @RequestParam String objectName) {
+            @RequestParam String objectName,
+            @SessionMember SessionUser user) {
         if (objectName == null || objectName.isBlank()) {
             throw new UploadException(ErrorCode.UPLOAD_OBJECT_NOT_FOUND);
         }
