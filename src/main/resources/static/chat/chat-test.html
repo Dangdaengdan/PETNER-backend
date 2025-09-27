@@ -258,7 +258,7 @@
         roomListDiv.innerHTML = '채팅방을 불러오는 중...';
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/chat/rooms/rooms/my`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/chat/rooms/my`, {
                 credentials: 'include' // 세션 쿠키 포함
             });
 
