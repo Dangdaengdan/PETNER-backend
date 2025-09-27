@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCP Storage Upload Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        input[type="file"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            word-break: break-all;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        #progress {
+            width: 100%;
+            height: 20px;
+            margin: 10px 0;
+            display: none;
+        }
+        .image-preview {
+            max-width: 300px;
+            max-height: 300px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 GCP Storage Upload Test</h1>
+
+        <!-- 로그인 섹션 -->
+        <div class="section">
+            <h2>🔐 로그인</h2>
+            <div id="loginStatus">로그인 상태 확인 중...</div>
+            <button onclick="checkLogin()" id="checkLoginBtn">로그인 상태 확인</button>
+            <button onclick="kakaoLogin()" id="loginBtn" style="display:none;">카카오 로그인</button>
+            <button onclick="logout()" id="logoutBtn" style="display:none;">로그아웃</button>
+        </div>
+
+        <!-- 업로드 섹션 -->
+        <div class="section">
+            <h2>📤 파일 업로드</h2>
+            <input type="file" id="fileInput" accept="image/*">
+            <button onclick="uploadFile()" id="uploadBtn">업로드</button>
+            <progress id="progress" value="0" max="100"></progress>
+            <div id="uploadResult"></div>
+        </div>
+
+        <!-- 다운로드 섹션 -->
+        <div class="section">
+            <h2>📥 파일 다운로드</h2>
+            <input type="text" id="objectNameInput" placeholder="objectName을 입력하세요 (예: uuid_filename.jpg)">
+            <button onclick="downloadFile()">다운로드 URL 생성</button>
+            <div id="downloadResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api/v1/upload';
+        const AUTH_API_BASE = 'http://localhost:8080/api/v1/auth/kakao';
+        const DOG_API_BASE = 'http://localhost:8080/api/v1/dogs';
+
+        // 페이지 로드 시 로그인 상태 확인
+        window.addEventListener('load', checkLogin);
+
+        // 로그인 상태 확인
+        async function checkLogin() {
+            try {
+                const response = await fetch(`${AUTH_API_BASE}/session`, {
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    updateLoginStatus(data.authenticated);
+                } else {
+                    updateLoginStatus(false);
+                }
+            } catch (error) {
+                console.error('로그인 상태 확인 실패:', error);
+                updateLoginStatus(false);
+            }
+        }
+
+        // 로그인 상태 UI 업데이트
+        function updateLoginStatus(isAuthenticated) {
+            const loginStatus = document.getElementById('loginStatus');
+            const loginBtn = document.getElementById('loginBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            if (isAuthenticated) {
+                loginStatus.innerHTML = '<span style="color: green;">✅ 로그인 됨</span>';
+                loginBtn.style.display = 'none';
+                logoutBtn.style.display = 'inline-block';
+            } else {
+                loginStatus.innerHTML = '<span style="color: red;">❌ 로그인 필요</span>';
+                loginBtn.style.display = 'inline-block';
+                logoutBtn.style.display = 'none';
+            }
+        }
+
+        // 카카오 로그인
+        function kakaoLogin() {
+            window.location.href = `${AUTH_API_BASE}/login`;
+        }
+
+        // 로그아웃
+        async function logout() {
+            try {
+                const response = await fetch(`${AUTH_API_BASE}/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    showResult(document.getElementById('loginStatus'), '로그아웃 성공', 'success');
+                    updateLoginStatus(false);
+                } else {
+                    showResult(document.getElementById('loginStatus'), '로그아웃 실패', 'error');
+                }
+            } catch (error) {
+                console.error('로그아웃 실패:', error);
+                showResult(document.getElementById('loginStatus'), '로그아웃 실패', 'error');
+            }
+        }
+
+        // 파일 업로드 함수
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const progress = document.getElementById('progress');
+            const resultDiv = document.getElementById('uploadResult');
+
+            if (!fileInput.files[0]) {
+                showResult(resultDiv, '파일을 선택해주세요.', 'error');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            uploadBtn.disabled = true;
+            progress.style.display = 'block';
+
+            try {
+                // 1. Presigned URL 요청
+                showResult(resultDiv, '업로드 URL 생성 중...', 'info');
+
+                const urlResponse = await fetch(`${API_BASE}/presigned-url?fileName=${encodeURIComponent(file.name)}&fileType=${encodeURIComponent(file.type)}`, {
+                    credentials: 'include'
+                });
+
+                if (!urlResponse.ok) {
+                    const errorData = await urlResponse.json();
+                    throw new Error(`URL 생성 실패: ${errorData.message || urlResponse.statusText}`);
+                }
+
+                const { url, objectName } = await urlResponse.json();
+
+                showResult(resultDiv, `업로드 URL 생성 성공! ObjectName: ${objectName}`, 'success');
+
+                // 2. 실제 파일 업로드
+                showResult(resultDiv, '파일 업로드 중...', 'info');
+
+                const uploadResponse = await fetch(url, {
+                    method: 'PUT',
+                    body: file,
+                    headers: {
+                        'Content-Type': file.type
+                    }
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error(`업로드 실패: ${uploadResponse.statusText}`);
+                }
+
+                progress.value = 100;
+
+                // 결과 표시
+                const resultHtml = `
+                    <strong>✅ 업로드 성공!</strong><br>
+                    파일명: ${file.name}<br>
+                    타입: ${file.type}<br>
+                    크기: ${(file.size / 1024).toFixed(2)} KB<br>
+                    ObjectName: ${objectName}<br>
+                    <br>
+                    <button onclick="document.getElementById('objectNameInput').value='${objectName}'">다운로드 테스트하기</button>
+                `;
+
+                showResult(resultDiv, resultHtml, 'success');
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                showResult(resultDiv, `❌ 업로드 실패: ${error.message}`, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+                progress.style.display = 'none';
+                progress.value = 0;
+            }
+        }
+
+        // 파일 다운로드 URL 생성 함수
+        async function downloadFile() {
+            const objectNameInput = document.getElementById('objectNameInput');
+            const resultDiv = document.getElementById('downloadResult');
+
+            if (!objectNameInput.value.trim()) {
+                showResult(resultDiv, 'ObjectName을 입력해주세요.', 'error');
+                return;
+            }
+
+            try {
+                showResult(resultDiv, '다운로드 URL 생성 중...', 'info');
+
+                const response = await fetch(`${API_BASE}/presigned-url/download?objectName=${encodeURIComponent(objectNameInput.value.trim())}`, {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`다운로드 URL 생성 실패: ${errorData.message || response.statusText}`);
+                }
+
+                const { url } = await response.json();
+
+                // 이미지인 경우 미리보기 표시
+                const resultHtml = `
+                    <strong>✅ 다운로드 URL 생성 성공!</strong><br>
+                    ObjectName: ${objectNameInput.value}<br>
+                    <br>
+                    <a href="${url}" target="_blank" style="color: #007bff;">🔗 파일 다운로드/보기</a><br>
+                    <br>
+                    <img src="${url}" class="image-preview" alt="Image Preview"
+                         onerror="this.style.display='none'; this.nextSibling.style.display='block';">
+                    <div style="display:none; color: #666;">이미지 미리보기를 불러올 수 없습니다.</div>
+                `;
+
+                showResult(resultDiv, resultHtml, 'success');
+
+            } catch (error) {
+                console.error('Download error:', error);
+                showResult(resultDiv, `❌ 다운로드 URL 생성 실패: ${error.message}`, 'error');
+            }
+        }
+
+        // 결과 표시 함수
+        function showResult(element, message, type) {
+            element.innerHTML = message;
+            element.className = `result ${type}`;
+        }
+
+        // 파일 선택 시 미리보기
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.createElement('img');
+                    preview.src = e.target.result;
+                    preview.className = 'image-preview';
+                    preview.alt = 'Selected file preview';
+
+                    // 기존 미리보기 제거
+                    const existingPreview = document.querySelector('#fileInput + .image-preview');
+                    if (existingPreview) {
+                        existingPreview.remove();
+                    }
+
+                    // 새 미리보기 추가
+                    document.getElementById('fileInput').insertAdjacentElement('afterend', preview);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>

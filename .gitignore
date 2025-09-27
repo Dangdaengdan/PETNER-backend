@@ -40,3 +40,6 @@ out/
 .env
 .env.local
 .env.*.local
+
+### Google Cloud Service Account Keys ###
+src/main/resources/service-key.json
