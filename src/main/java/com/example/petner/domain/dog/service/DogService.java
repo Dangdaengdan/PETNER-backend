@@ -9,11 +9,13 @@ import com.example.petner.domain.dog.entity.Dog;
 import com.example.petner.domain.dog.repository.DogRepository;
 import com.example.petner.domain.member.entity.Member;
 import com.example.petner.domain.shelter.entity.Shelter;
+import com.example.petner.domain.upload.service.UploadService;
 import com.example.petner.global.dto.SessionUser;
 import com.example.petner.global.exception.ErrorCode;
 import com.example.petner.global.exception.customException.DogException;
 import com.example.petner.search.event.DogEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -30,6 +32,7 @@ import java.util.stream.Collectors;
  * 유기견 CRUD 기능을 제공하는 서비스 클래스
  * SOLID 원칙을 준수하여 리팩토링된 버전
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -39,6 +42,7 @@ public class DogService {
     private final DogValidator dogValidator;
     private final DogUpdater dogUpdater;
     private final ApplicationEventPublisher eventPublisher;
+    private final UploadService uploadService;
 
     /**
      * 유기견 등록
@@ -190,10 +194,22 @@ public class DogService {
         // 2. 권한 검증 (본인이 등록한 유기견인지 확인)
         dogValidator.validateDogAccess(dog, user);
 
-        // 3. 삭제 수행
+        // 3. GCP Storage에서 이미지 삭제
+        if (dog.getImageUrl() != null && !dog.getImageUrl().isBlank()) {
+            try {
+                uploadService.deleteImageFromStorage(dog.getImageUrl());
+            } catch (Exception e) {
+                // 이미지 삭제 실패 시 로그는 남기지만 DB 삭제는 계속 진행
+                // (이미지가 이미 삭제되었거나 네트워크 이슈일 수 있음)
+                log.warn("강아지 삭제 중 이미지 삭제 실패 (dogId: {}, imageUrl: {}): {}",
+                        dogId, dog.getImageUrl(), e.getMessage());
+            }
+        }
+
+        // 4. DB에서 삭제 수행
         dogRepository.delete(dog);
 
-        // 4. OpenSearch 동기화를 위한 이벤트 발행
+        // 5. OpenSearch 동기화를 위한 이벤트 발행
         eventPublisher.publishEvent(DogEvent.deleted(dogId));
     }
 }

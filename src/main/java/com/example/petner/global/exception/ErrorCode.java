@@ -77,7 +77,9 @@ public enum ErrorCode {
     UPLOAD_FILE_SIZE_EXCEEDED("400-UP02", "파일 크기가 허용 범위를 초과했습니다", HttpStatus.BAD_REQUEST),
     UPLOAD_PRESIGNED_URL_GENERATION_FAILED("500-UP03", "업로드 URL 생성에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR),
     UPLOAD_OBJECT_NOT_FOUND("404-UP04", "요청한 파일을 찾을 수 없습니다", HttpStatus.NOT_FOUND),
-    UPLOAD_DOWNLOAD_URL_GENERATION_FAILED("500-UP05", "다운로드 URL 생성에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR);
+    UPLOAD_DOWNLOAD_URL_GENERATION_FAILED("500-UP05", "다운로드 URL 생성에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR),
+    UPLOAD_DELETE_FAILED("500-UP06", "파일 삭제에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR),
+    UPLOAD_INVALID_URL_FORMAT("400-UP07", "잘못된 URL 형식입니다", HttpStatus.BAD_REQUEST);
 
     private final String errorCode;
     private final String message;
