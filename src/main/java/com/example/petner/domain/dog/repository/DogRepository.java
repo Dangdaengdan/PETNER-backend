@@ -73,4 +73,16 @@ public interface DogRepository extends JpaRepository<Dog, Long> {
            "JOIN FETCH d.member " +
            "LEFT JOIN FETCH d.shelter")
     List<Dog> findAllWithAssociationsPaging(Pageable pageable);
+
+    /**
+     * N+1 문제 해결을 위한 페치 조인 - 특정 사용자가 등록한 유기견 목록 조회 (페이징)
+     * Dog와 연관된 Breed, Member, Shelter를 한 번의 쿼리로 조회하며 페이징을 지원
+     * 특정 멤버 ID로 필터링하여 해당 사용자가 등록한 유기견만 조회
+     */
+    @Query(value = "SELECT d FROM Dog d " +
+           "JOIN FETCH d.breed " +
+           "JOIN FETCH d.member " +
+           "LEFT JOIN FETCH d.shelter " +
+           "WHERE d.member.memberId = :memberId")
+    List<Dog> findByMemberIdWithAssociationsPaging(@Param("memberId") Long memberId, Pageable pageable);
 }

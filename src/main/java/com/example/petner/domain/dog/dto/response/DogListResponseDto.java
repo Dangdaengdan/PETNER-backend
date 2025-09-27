@@ -50,6 +50,9 @@ public class DogListResponseDto {
     @Schema(description = "보호소명", example = "서울시 강남구 동물보호센터")
     private String shelterName;
 
+    @Schema(description = "생년월일", example = "202301")
+    private String birthDate;
+
     @Schema(description = "등록일시", example = "2024-01-01T10:00:00")
     private LocalDateTime createdAt;
 
@@ -68,6 +71,7 @@ public class DogListResponseDto {
                 .imageUrl(dog.getImageUrl())
                 .memberNickname(dog.getMember().getNickname())
                 .shelterName(dog.getShelter() != null ? dog.getShelter().getName() : null)
+                .birthDate(dog.getBirthDate())
                 .createdAt(dog.getCreatedAt())
                 .build();
     }
