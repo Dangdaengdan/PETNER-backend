@@ -110,6 +110,33 @@ public class  DogController {
     }
 
     /**
+     * 내가 등록한 유기견 목록 조회 API (페이징)
+     *
+     * @param page 페이지 번호 (선택, 기본값: 0)
+     * @param size 페이지 크기 (선택, 기본값: 10)
+     * @param user 세션에서 자동 주입되는 로그인 사용자 정보
+     * @return 내가 등록한 유기견 목록 (200 OK)
+     *
+     * 비즈니스 로직:
+     * 1. 세션 사용자 ID로 등록한 유기견만 필터링
+     * 2. 데이터베이스에서 해당 사용자가 등록한 유기견 정보를 페이징하여 조회
+     * 3. N+1 문제 해결을 위한 페치 조인 적용
+     * 4. 최신 등록순으로 정렬하여 반환
+     * 5. 페이징 처리로 성능 최적화
+     */
+    @GetMapping("/my")
+    @Operation(summary = "내가 등록한 유기견 목록 조회 (페이징 o)", description = "로그인한 사용자가 등록한 유기견 목록을 페이징하여 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "내가 등록한 유기견 목록 조회 성공")
+    public ResponseEntity<List<DogListResponseDto>> getMyDogs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @SessionMember SessionUser user) {
+
+        List<DogListResponseDto> dogs = dogService.getMyDogs(page, size, user);
+        return ResponseEntity.ok(dogs);
+    }
+
+    /**
      * 유기견 상세 조회 API
      *
      * @param dogId 조회할 유기견 ID

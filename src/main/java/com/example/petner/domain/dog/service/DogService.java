@@ -142,6 +142,33 @@ public class DogService {
     }
 
     /**
+     * 내가 등록한 유기견 목록 조회 (페이징)
+     *
+     * @param page 페이지 번호 (0부터 시작)
+     * @param size 페이지 크기
+     * @param user 세션 사용자 정보
+     * @return 내가 등록한 유기견 목록 (최신 등록순 정렬)
+     *
+     * 비즈니스 로직:
+     * 1. 세션 사용자 ID로 등록한 유기견만 필터링
+     * 2. N+1 문제 해결을 위한 페치 조인 사용
+     * 3. 페이징 처리로 성능 최적화
+     * 4. 최신 등록순으로 정렬하여 반환
+     */
+    public List<DogListResponseDto> getMyDogs(int page, int size, SessionUser user) {
+        // 페이징 설정 (최신 등록순 정렬)
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        // 해당 사용자가 등록한 유기견만 조회 (N+1 문제 해결)
+        List<Dog> dogs = dogRepository.findByMemberIdWithAssociationsPaging(user.getMemberId(), pageable);
+
+        return dogs.stream()
+                .map(DogListResponseDto::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * 유기견 상세 조회
      *
      * @param dogId 유기견 ID
