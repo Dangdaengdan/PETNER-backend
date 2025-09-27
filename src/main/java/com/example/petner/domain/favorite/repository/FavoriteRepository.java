@@ -3,6 +3,7 @@ package com.example.petner.domain.favorite.repository;
 import com.example.petner.domain.dog.entity.Dog;
 import com.example.petner.domain.favorite.entity.Favorite;
 import com.example.petner.domain.member.entity.Member;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -85,4 +86,19 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
      * @param dogId 강아지 ID
      */
     void deleteByMemberMemberIdAndDogDogId(Long memberId, Long dogId);
+
+    /**
+     * 특정 멤버의 즐겨찾기를 생성일 기준 내림차순으로 페이징 조회 (N+1 방지)
+     * ChatMessageService 패턴을 따라 List로 반환
+     * @param memberId 멤버 ID
+     * @param pageable 페이징 정보
+     * @return 즐겨찾기 목록 (강아지 정보 포함)
+     */
+    @Query(value = "SELECT f FROM Favorite f " +
+           "LEFT JOIN FETCH f.dog d " +
+           "LEFT JOIN FETCH d.breed " +
+           "LEFT JOIN FETCH d.member " +
+           "LEFT JOIN FETCH d.shelter " +
+           "WHERE f.member.memberId = :memberId")
+    List<Favorite> findByMemberIdWithDogDetailsPaging(@Param("memberId") Long memberId, Pageable pageable);
 }

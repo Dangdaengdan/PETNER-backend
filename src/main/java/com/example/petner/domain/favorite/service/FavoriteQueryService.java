@@ -4,6 +4,9 @@ import com.example.petner.domain.favorite.dto.response.FavoriteListResponseDto;
 import com.example.petner.domain.favorite.entity.Favorite;
 import com.example.petner.domain.favorite.repository.FavoriteRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +33,32 @@ public class FavoriteQueryService {
      */
     public List<FavoriteListResponseDto> getMemberFavorites(Long memberId) {
         List<Favorite> favorites = favoriteRepository.findByMemberIdWithDogDetails(memberId);
+
+        return favorites.stream()
+                .map(FavoriteListResponseDto::new)
+                .toList();
+    }
+
+    /**
+     * 특정 멤버의 즐겨찾기 목록 조회 (페이징)
+     *
+     * @param memberId 멤버 ID
+     * @param page 페이지 번호 (0부터 시작)
+     * @param size 페이지 크기
+     * @return 즐겨찾기 목록 (강아지 상세 정보 포함)
+     *
+     * 비즈니스 로직:
+     * 1. N+1 문제 해결을 위한 페치 조인 사용
+     * 2. 페이징 처리로 성능 최적화
+     * 3. 최신 즐겨찾기순으로 정렬하여 반환
+     */
+    public List<FavoriteListResponseDto> getMemberFavorites(Long memberId, int page, int size) {
+        // 페이징 설정 (최신 즐겨찾기순 정렬)
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        // 페이징된 즐겨찾기 조회 (N+1 문제 해결)
+        List<Favorite> favorites = favoriteRepository.findByMemberIdWithDogDetailsPaging(memberId, pageable);
 
         return favorites.stream()
                 .map(FavoriteListResponseDto::new)

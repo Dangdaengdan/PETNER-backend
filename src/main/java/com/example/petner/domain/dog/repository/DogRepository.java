@@ -4,6 +4,8 @@ import com.example.petner.domain.dog.common.AdoptionStatus;
 import com.example.petner.domain.dog.entity.Dog;
 import com.example.petner.domain.member.entity.Member;
 import com.example.petner.domain.shelter.entity.Shelter;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -60,4 +62,15 @@ public interface DogRepository extends JpaRepository<Dog, Long> {
            "LEFT JOIN FETCH s.location " +
            "WHERE d.dogId = :dogId")
     Optional<Dog> findByIdWithAllAssociations(@Param("dogId") Long dogId);
+
+    /**
+     * N+1 문제 해결을 위한 페치 조인 - 페이징 지원 목록 조회
+     * Dog와 연관된 Breed, Member, Shelter를 한 번의 쿼리로 조회하며 페이징을 지원
+     * ChatMessageService 패턴을 따라 List로 반환
+     */
+    @Query(value = "SELECT d FROM Dog d " +
+           "JOIN FETCH d.breed " +
+           "JOIN FETCH d.member " +
+           "LEFT JOIN FETCH d.shelter")
+    List<Dog> findAllWithAssociationsPaging(Pageable pageable);
 }
