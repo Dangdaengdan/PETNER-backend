@@ -47,21 +47,37 @@ public class AuthController {
     }
 
     @GetMapping("/callback")
-    public ResponseEntity<LoginResponse> kakaoCallback(
+    public RedirectView kakaoCallback(
             @RequestParam("code") String authorizationCode,
+            @RequestParam(value = "error", required = false) String error,
             HttpSession session) {
-        
+
+        // 에러가 있는 경우 프론트엔드로 에러와 함께 리다이렉트
+        if (error != null) {
+            log.warn("[카카오 콜백] 에러 발생: {}", error);
+            return new RedirectView("http://localhost:3000/auth/kakao/callback?error=" + error);
+        }
+
         if (authorizationCode == null || authorizationCode.trim().isEmpty()) {
             log.warn("[카카오 콜백] 인증 코드가 비어있음");
-            throw new RuntimeException("인증 코드가 비어있습니다");
+            return new RedirectView("http://localhost:3000/auth/kakao/callback?error=invalid_code");
         }
-        
-        String maskedCode = authorizationCode.length() > 4 ? 
-            authorizationCode.substring(0, 4) + "****" : "****";
-        log.info("[카카오 콜백] 처리 시작: code={}", maskedCode);
-        
-        LoginResponse response = authService.kakaoLogin(authorizationCode, session);
-        return ResponseEntity.ok(response);
+
+        try {
+            String maskedCode = authorizationCode.length() > 4 ?
+                authorizationCode.substring(0, 4) + "****" : "****";
+            log.info("[카카오 콜백] 처리 시작: code={}", maskedCode);
+
+            LoginResponse response = authService.kakaoLogin(authorizationCode, session);
+            log.info("[카카오 콜백] 로그인 성공, 프론트엔드로 리다이렉트");
+
+            // 성공시 프론트엔드로 리다이렉트 (성공 파라미터와 함께)
+            return new RedirectView("http://localhost:3000/auth/kakao/callback?success=true");
+
+        } catch (Exception e) {
+            log.error("[카카오 콜백] 처리 실패", e);
+            return new RedirectView("http://localhost:3000/auth/kakao/callback?error=login_failed");
+        }
     }
 
     @PostMapping("/logout")

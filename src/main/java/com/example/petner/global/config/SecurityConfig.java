@@ -22,6 +22,7 @@ public class SecurityConfig {
                 .anyRequest().permitAll()
             )
             .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configure(http)) // CORS 설정 활성화
             .sessionManagement(session -> session
                 .sessionFixation().migrateSession()
                 .maximumSessions(1)
