@@ -89,9 +89,18 @@ public class CommentService {
     }
 
     @Transactional
-    public CommentResponseDto updateComment(Long commentId, Long currentUserId, CommentUpdateRequestDto request) {
+    public CommentResponseDto updateComment(Long postId, Long commentId, Long currentUserId, CommentUpdateRequestDto request) {
+        // 게시물 존재 확인
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new PostException(ErrorCode.POST_NOT_FOUND));
+
         Comment comment = commentRepository.findByIdWithMember(commentId)
                 .orElseThrow(() -> new CommentException(ErrorCode.COMMENT_NOT_FOUND));
+
+        // 댓글이 해당 게시물에 속하는지 확인
+        if (!comment.getPost().getPostId().equals(postId)) {
+            throw new CommentException(ErrorCode.COMMENT_POST_MISMATCH);
+        }
 
         // 댓글 작성자와 수정 요청자가 동일한지 확인
         if (!comment.getMember().getMemberId().equals(currentUserId)) {
@@ -104,15 +113,24 @@ public class CommentService {
     }
 
     @Transactional
-    public CommentDeleteResponseDto deleteComment(Long commentId, Long currentUserId) {
-        Comment comment = validateDeletePermission(commentId, currentUserId);
+    public CommentDeleteResponseDto deleteComment(Long postId, Long commentId, Long currentUserId) {
+        Comment comment = validateDeletePermission(postId, commentId, currentUserId);
         executeDelete(comment);
         return CommentDeleteResponseDto.success(commentId, currentUserId);
     }
 
-    private Comment validateDeletePermission(Long commentId, Long currentUserId) {
+    private Comment validateDeletePermission(Long postId, Long commentId, Long currentUserId) {
+        // 게시물 존재 확인
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new PostException(ErrorCode.POST_NOT_FOUND));
+
         Comment comment = commentRepository.findByIdWithMember(commentId)
                 .orElseThrow(() -> new CommentException(ErrorCode.COMMENT_NOT_FOUND));
+
+        // 댓글이 해당 게시물에 속하는지 확인
+        if (!comment.getPost().getPostId().equals(postId)) {
+            throw new CommentException(ErrorCode.COMMENT_POST_MISMATCH);
+        }
 
         if (!comment.getMember().getMemberId().equals(currentUserId)) {
             throw new CommentException(ErrorCode.COMMENT_ACCESS_DENIED);
