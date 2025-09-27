@@ -67,7 +67,7 @@ public class ChatRoomController {
      * 3. 각 채팅방의 상대방 정보와 마지막 메시지 포함하여 반환
      * 4. N+1 문제 방지를 위한 효율적인 조회 수행
      */
-    @GetMapping("/rooms/my")
+    @GetMapping("/my")
     @Operation(summary = "내 채팅방 목록 조회", description = "로그인한 사용자의 채팅방 목록을 조회합니다")
     @ApiResponse(responseCode = "200", description = "채팅방 목록 조회 성공")
     public ResponseEntity<List<ChatRoomListResponseDto>> getMyChatRooms(@SessionMember SessionUser user) {
