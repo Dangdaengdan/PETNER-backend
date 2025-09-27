@@ -70,7 +70,14 @@ public enum ErrorCode {
     CHAT_ALREADY_ADOPTED("409-CH08", "이미 입양된 강아지입니다", HttpStatus.CONFLICT),
     CHAT_INVALID_REQUEST("400-CH09", "잘못된 채팅 요청입니다.", HttpStatus.BAD_REQUEST),
     CHAT_DOG_NOT_FOUND("404-CH10", "강아지 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
-    CHAT_INVALID_SAME_MEMBER("400-CH11", "동일한 사용자끼리는 채팅을 할 수 없습니다.", HttpStatus.BAD_REQUEST);
+    CHAT_INVALID_SAME_MEMBER("400-CH11", "동일한 사용자끼리는 채팅을 할 수 없습니다.", HttpStatus.BAD_REQUEST),
+
+    /* 업로드 관련 */
+    UPLOAD_INVALID_FILE_TYPE("400-UP01", "지원하지 않는 파일 형식입니다", HttpStatus.BAD_REQUEST),
+    UPLOAD_FILE_SIZE_EXCEEDED("400-UP02", "파일 크기가 허용 범위를 초과했습니다", HttpStatus.BAD_REQUEST),
+    UPLOAD_PRESIGNED_URL_GENERATION_FAILED("500-UP03", "업로드 URL 생성에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR),
+    UPLOAD_OBJECT_NOT_FOUND("404-UP04", "요청한 파일을 찾을 수 없습니다", HttpStatus.NOT_FOUND),
+    UPLOAD_DOWNLOAD_URL_GENERATION_FAILED("500-UP05", "다운로드 URL 생성에 실패했습니다", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final String errorCode;
     private final String message;
