@@ -38,6 +38,7 @@ public class DogService {
     private final DogRepository dogRepository;
     private final DogValidator dogValidator;
     private final DogUpdater dogUpdater;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 유기견 등록
