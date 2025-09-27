@@ -48,26 +48,28 @@ public class CommentController {
         return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/comments/{commentId}")
-    @Operation(summary = "댓글 수정", description = "특정 댓글을 수정합니다.")
+    @PatchMapping("/posts/{postId}/comments/{commentId}")
+    @Operation(summary = "댓글 수정", description = "특정 게시물의 댓글을 수정합니다.")
     @ApiResponse(responseCode = "200", description = "댓글 수정 성공")
     public ResponseEntity<CommentResponseDto> updateComment(
+            @Parameter(description = "게시물 ID") @PathVariable Long postId,
             @Parameter(description = "댓글 ID") @PathVariable Long commentId,
             @Valid @RequestBody CommentUpdateRequestDto request,
             @SessionMember SessionUser user) {
 
-        CommentResponseDto response = commentService.updateComment(commentId, user.getMemberId(), request);
+        CommentResponseDto response = commentService.updateComment(postId, commentId, user.getMemberId(), request);
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/comments/{commentId}")
-    @Operation(summary = "댓글 삭제", description = "특정 댓글을 삭제합니다.")
+    @DeleteMapping("/posts/{postId}/comments/{commentId}")
+    @Operation(summary = "댓글 삭제", description = "특정 게시물의 댓글을 삭제합니다.")
     @ApiResponse(responseCode = "200", description = "댓글 삭제 성공")
     public ResponseEntity<CommentDeleteResponseDto> deleteComment(
+            @Parameter(description = "게시물 ID") @PathVariable Long postId,
             @Parameter(description = "댓글 ID") @PathVariable Long commentId,
             @SessionMember SessionUser user) {
 
-        CommentDeleteResponseDto response = commentService.deleteComment(commentId, user.getMemberId());
+        CommentDeleteResponseDto response = commentService.deleteComment(postId, commentId, user.getMemberId());
         return ResponseEntity.ok(response);
     }
 }
