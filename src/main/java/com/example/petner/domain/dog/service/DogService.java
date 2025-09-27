@@ -53,39 +53,55 @@ public class DogService {
      */
     @Transactional
     public DogResponseDto createDog(DogCreateRequestDto requestDto, SessionUser user) {
-        // 1. 사용자 검증
-        Member member = dogValidator.validateAndGetMember(user);
+        String imageUrl = requestDto.getImageUrl();
 
-        // 2. 견종 검증
-        Breed breed = dogValidator.validateAndGetBreed(requestDto.getBreedId());
+        try {
+            // 1. 사용자 검증
+            Member member = dogValidator.validateAndGetMember(user);
 
-        // 3. 보호소 검증 (선택적)
-        Shelter shelter = dogValidator.validateAndGetShelter(requestDto.getShelterId());
+            // 2. 견종 검증
+            Breed breed = dogValidator.validateAndGetBreed(requestDto.getBreedId());
 
-        // 4. 유기견 엔티티 생성
-        Dog dog = Dog.builder()
-                .name(requestDto.getName())
-                .breed(breed)
-                .birthDate(requestDto.getBirthDate())
-                .gender(requestDto.getGender())
-                .dogSize(requestDto.getDogSize())
-                .weight(requestDto.getWeight())
-                .healthStatus(requestDto.getHealthStatus())
-                .description(requestDto.getDescription())
-                .adoptionStatus(requestDto.getAdoptionStatus())
-                .imageUrl(requestDto.getImageUrl())
-                .member(member)
-                .shelter(shelter)
-                .build();
+            // 3. 보호소 검증 (선택적)
+            Shelter shelter = dogValidator.validateAndGetShelter(requestDto.getShelterId());
 
-        // 5. 데이터베이스에 저장
-        Dog savedDog = dogRepository.save(dog);
+            // 4. 유기견 엔티티 생성
+            Dog dog = Dog.builder()
+                    .name(requestDto.getName())
+                    .breed(breed)
+                    .birthDate(requestDto.getBirthDate())
+                    .gender(requestDto.getGender())
+                    .dogSize(requestDto.getDogSize())
+                    .weight(requestDto.getWeight())
+                    .healthStatus(requestDto.getHealthStatus())
+                    .description(requestDto.getDescription())
+                    .adoptionStatus(requestDto.getAdoptionStatus())
+                    .imageUrl(imageUrl)
+                    .member(member)
+                    .shelter(shelter)
+                    .build();
 
-        // 6. OpenSearch 동기화를 위한 이벤트 발행
-        eventPublisher.publishEvent(DogEvent.created(savedDog.getDogId()));
+            // 5. 데이터베이스에 저장
+            Dog savedDog = dogRepository.save(dog);
 
-        // 7. 응답 DTO 반환
-        return DogResponseDto.from(savedDog);
+            // 6. OpenSearch 동기화를 위한 이벤트 발행
+            eventPublisher.publishEvent(DogEvent.created(savedDog.getDogId()));
+
+            // 7. 응답 DTO 반환
+            return DogResponseDto.from(savedDog);
+
+        } catch (Exception e) {
+            // Dog 생성 실패 시 업로드된 이미지 삭제
+            if (imageUrl != null && !imageUrl.isBlank()) {
+                try {
+                    uploadService.deleteImageFromStorage(imageUrl);
+                    log.info("Dog 생성 실패로 인한 이미지 삭제 완료: {}", imageUrl);
+                } catch (Exception deleteException) {
+                    log.warn("Dog 생성 실패 후 이미지 삭제 실패: {}", imageUrl, deleteException);
+                }
+            }
+            throw e; // 원래 예외를 다시 던짐
+        }
     }
 
     /**
