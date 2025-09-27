@@ -2,6 +2,7 @@ package com.example.petner.domain.upload.controller;
 
 import com.example.petner.domain.upload.dto.response.DownloadUrlResponseDto;
 import com.example.petner.domain.upload.dto.response.UploadUrlResponseDto;
+import com.example.petner.domain.upload.service.FileValidator;
 import com.example.petner.global.annotation.SessionMember;
 import com.example.petner.global.dto.SessionUser;
 import com.example.petner.global.exception.ErrorCode;
@@ -27,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 public class UploadController {
 
     private final Storage storage;
+    private final FileValidator fileValidator;
+
     @Value("${GCP_BUCKET}")
     private String bucketName;
 
@@ -36,10 +39,9 @@ public class UploadController {
             @RequestParam String fileName,
             @RequestParam(required = false) String fileType,
             @SessionMember SessionUser user) {
-        // 기본값으로 image/* 만 허용
-        if (fileType == null || fileType.isBlank() || !fileType.startsWith("image/")) {
-            throw new UploadException(ErrorCode.UPLOAD_INVALID_FILE_TYPE);
-        }
+
+        // 파일 유효성 검증
+        fileValidator.validateFile(fileName, fileType);
 
         try {
             // UUID를 파일명에 적용하여 고유한 객체명 생성
