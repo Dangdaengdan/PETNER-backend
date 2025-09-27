@@ -45,6 +45,7 @@ public enum ErrorCode {
     COMMENT_ACCESS_DENIED("403-CM02", "댓글에 대한 접근 권한이 없습니다", HttpStatus.FORBIDDEN),
     COMMENT_POST_MISMATCH("400-CM03", "댓글과 게시글이 일치하지 않습니다", HttpStatus.BAD_REQUEST),
     COMMENT_MAX_DEPTH_EXCEEDED("400-CM04", "댓글은 2단계까지만 작성 가능합니다", HttpStatus.BAD_REQUEST),
+    COMMENT_INVALID_REQUEST("400-CM05", "잘못된 댓글 요청입니다", HttpStatus.BAD_REQUEST),
 
     /* 보호소 관련 */
     SHELTER_NOT_FOUND("404-SH01", "보호소 정보를 찾을 수 없습니다", HttpStatus.NOT_FOUND),
