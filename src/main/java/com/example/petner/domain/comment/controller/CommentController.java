@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,9 +40,23 @@ public class CommentController {
     }
 
     @GetMapping("/posts/{postId}/comments")
-    @Operation(summary = "게시물 댓글 전체 조회", description = "특정 게시물의 모든 댓글을 계층 구조로 조회합니다.")
+    @Operation(summary = "게시물 댓글 조회 (페이징)", description = "특정 게시물의 댓글을 페이징하여 계층 구조로 조회합니다.")
     @ApiResponse(responseCode = "200", description = "댓글 목록 조회 성공")
-    public ResponseEntity<List<CommentResponseDto>> getCommentsByPost(
+    public ResponseEntity<Page<CommentResponseDto>> getCommentsByPost(
+            @Parameter(description = "게시물 ID") @PathVariable Long postId,
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기", example = "20")
+            @RequestParam(defaultValue = "20") int size) {
+
+        Page<CommentResponseDto> response = commentService.getCommentsByPostWithPaging(postId, page, size);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/posts/{postId}/comments/all")
+    @Operation(summary = "게시물 댓글 전체 조회 (페이징 x)", description = "특정 게시물의 모든 댓글을 계층 구조로 조회합니다(디버깅용).")
+    @ApiResponse(responseCode = "200", description = "댓글 목록 전체 조회 성공")
+    public ResponseEntity<List<CommentResponseDto>> getAllCommentsByPost(
             @Parameter(description = "게시물 ID") @PathVariable Long postId) {
 
         List<CommentResponseDto> response = commentService.getCommentsByPost(postId);
