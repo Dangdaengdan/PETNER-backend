@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Builder
 @Schema(description = "프로필 조회 응답")
@@ -45,6 +47,9 @@ public class ProfileResponseDto {
     @Schema(description = "프로필 완성 여부", example = "true")
     private boolean profileCompleted;
 
+    @Schema(description = "생성일시", example = "2024-01-01T10:00:00")
+    private LocalDateTime createdAt;
+
     public static ProfileResponseDto from(Member member) {
         String locationName = null;
         if (member.getLocation() != null && 
@@ -65,6 +70,7 @@ public class ProfileResponseDto {
                 .district(member.getLocation() != null ? member.getLocation().getDistrict() : null)
                 .locationName(locationName)
                 .profileCompleted(member.isProfileComplete())
+                .createdAt(member.getCreatedAt())
                 .build();
     }
 }
