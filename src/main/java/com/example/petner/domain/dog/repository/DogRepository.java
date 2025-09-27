@@ -48,4 +48,16 @@ public interface DogRepository extends JpaRepository<Dog, Long> {
            "LEFT JOIN FETCH d.shelter " +
            "WHERE d.dogId = :dogId")
     Optional<Dog> findByIdWithAssociations(@Param("dogId") Long dogId);
+
+    /**
+     * 검색 동기화를 위한 페치 조인 - 모든 연관관계 포함
+     * Dog와 연관된 모든 엔티티(Breed, Member, Shelter, Location)를 한 번의 쿼리로 조회
+     */
+    @Query("SELECT d FROM Dog d " +
+           "JOIN FETCH d.breed " +
+           "JOIN FETCH d.member " +
+           "LEFT JOIN FETCH d.shelter s " +
+           "LEFT JOIN FETCH s.location " +
+           "WHERE d.dogId = :dogId")
+    Optional<Dog> findByIdWithAllAssociations(@Param("dogId") Long dogId);
 }

@@ -6,6 +6,11 @@ import com.example.petner.domain.dog.dto.response.DogDeleteResponseDto;
 import com.example.petner.domain.dog.dto.response.DogListResponseDto;
 import com.example.petner.domain.dog.dto.response.DogResponseDto;
 import com.example.petner.domain.dog.service.DogService;
+import com.example.petner.domain.dog.common.AdoptionStatus;
+import com.example.petner.domain.dog.common.DogSize;
+import com.example.petner.global.config.common.Gender;
+import com.example.petner.search.document.DogDocument;
+import com.example.petner.search.service.DogSearchService;
 import com.example.petner.global.annotation.SessionMember;
 import com.example.petner.global.dto.SessionUser;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,6 +36,7 @@ import java.util.List;
 public class  DogController {
 
     private final DogService dogService;
+    private final DogSearchService dogSearchService;
 
     /**
      * 유기견 정보 등록 API
@@ -147,5 +153,57 @@ public class  DogController {
         dogService.deleteDog(dogId, user);
         DogDeleteResponseDto responseDto = new DogDeleteResponseDto(dogId, user.getMemberId(), "유기견 정보 삭제 성공");
         return ResponseEntity.ok(responseDto);
+    }
+
+    /**
+     * 유기견 검색 API
+     *
+     * @param q 검색 키워드
+     * @param dogSize 견종 크기 필터
+     * @param breedName 견종명 필터
+     * @param gender 성별 필터
+     * @param location 지역 필터
+     * @param adoptionStatus 입양 상태 필터
+     * @param page 페이지 번호
+     * @param size 페이지 크기
+     * @return 검색된 유기견 목록 (200 OK)
+     *
+     * 비즈니스 로직:
+     * 1. OpenSearch를 통한 키워드 검색
+     * 2. 다양한 필터 조건 적용
+     * 3. 페이징 처리된 결과 반환
+     */
+    @GetMapping("/search")
+    @Operation(summary = "유기견 검색", description = "키워드와 필터를 통해 유기견을 검색합니다.")
+    @ApiResponse(responseCode = "200", description = "유기견 검색 성공")
+    public ResponseEntity<List<DogDocument>> searchDogs(
+            @Parameter(description = "검색 키워드", example = "말티즈")
+            @RequestParam(required = false) String q,
+
+            @Parameter(description = "견종 크기", example = "소형")
+            @RequestParam(required = false) DogSize dogSize,
+
+            @Parameter(description = "견종명", example = "말티즈")
+            @RequestParam(required = false) String breedName,
+
+            @Parameter(description = "성별", example = "MALE")
+            @RequestParam(required = false) Gender gender,
+
+            @Parameter(description = "지역", example = "서울")
+            @RequestParam(required = false) String location,
+
+            @Parameter(description = "입양 상태", example = "입양_가능")
+            @RequestParam(required = false) AdoptionStatus adoptionStatus,
+
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+
+            @Parameter(description = "페이지 크기", example = "10")
+            @RequestParam(defaultValue = "10") int size) {
+
+        List<DogDocument> response = dogSearchService.searchDogs(
+            q, dogSize, breedName, gender, location, adoptionStatus, page, size
+        );
+        return ResponseEntity.ok(response);
     }
 }

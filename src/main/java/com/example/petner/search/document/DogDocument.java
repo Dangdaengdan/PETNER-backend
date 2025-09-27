@@ -4,6 +4,7 @@ import com.example.petner.domain.dog.common.AdoptionStatus;
 import com.example.petner.domain.dog.common.DogSize;
 import com.example.petner.domain.dog.entity.Dog;
 import com.example.petner.global.config.common.Gender;
+import com.example.petner.search.dto.DogSearchDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -60,6 +61,29 @@ public class DogDocument {
                 .shelterName(dog.getShelter() != null ? dog.getShelter().getName() : null)
                 .location(dog.getShelter() != null && dog.getShelter().getLocation() != null ?
                     dog.getShelter().getLocation().getState() + " " + dog.getShelter().getLocation().getDistrict() : null)
+                .build();
+    }
+
+    public static DogDocument from(DogSearchDto dto) {
+        return DogDocument.builder()
+                .id(String.valueOf(dto.getDogId()))
+                .dogId(dto.getDogId())
+                .name(dto.getName())
+                .breedName(dto.getBreedName())
+                .birthDate(dto.getBirthDate())
+                .gender(dto.getGender())
+                .dogSize(dto.getDogSize())
+                .weight(dto.getWeight())
+                .healthStatus(dto.getHealthStatus())
+                .description(dto.getDescription())
+                .adoptionStatus(dto.getAdoptionStatus())
+                .createdAt(dto.getCreatedAt())
+                .updatedAt(dto.getUpdatedAt())
+                .imageUrl(dto.getImageUrl())
+                .memberId(dto.getMemberId())
+                .shelterId(dto.getShelterId())
+                .shelterName(dto.getShelterName())
+                .location(dto.getLocation())
                 .build();
     }
 }
