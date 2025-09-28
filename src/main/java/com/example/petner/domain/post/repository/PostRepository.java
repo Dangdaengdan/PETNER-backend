@@ -5,6 +5,7 @@ import com.example.petner.domain.post.entity.Post;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -36,4 +37,18 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("SELECT p FROM Post p JOIN FETCH p.author WHERE p.postId = :postId")
     java.util.Optional<Post> findByIdWithAuthor(@Param("postId") Long postId);
+
+    /**
+     * 게시물의 좋아요 개수 증가
+     */
+    @Modifying
+    @Query("UPDATE Post p SET p.likeCount = p.likeCount + 1 WHERE p.postId = :postId")
+    void increaseLikeCount(@Param("postId") Long postId);
+
+    /**
+     * 게시물의 좋아요 개수 감소
+     */
+    @Modifying
+    @Query("UPDATE Post p SET p.likeCount = p.likeCount - 1 WHERE p.postId = :postId AND p.likeCount > 0")
+    void decreaseLikeCount(@Param("postId") Long postId);
 }

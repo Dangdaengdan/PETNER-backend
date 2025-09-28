@@ -13,6 +13,7 @@ public class PostSummaryResponseDto {
     private final String thumbImageUrl;
     private final String authorNickname;
     private final int viewCount;
+    private final int likeCount;
     private final LocalDateTime createdAt;
 
     public PostSummaryResponseDto(Post post) {
@@ -21,6 +22,7 @@ public class PostSummaryResponseDto {
         this.thumbImageUrl = post.getThumbImageUrl();
         this.authorNickname = post.getAuthor().getNickname();
         this.viewCount = post.getViewCount();
+        this.likeCount = post.getLikeCount();
         this.createdAt = post.getCreatedAt();
     }
 }

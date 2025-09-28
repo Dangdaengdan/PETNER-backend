@@ -31,6 +31,9 @@ public class Post {
     @Column(name = "view_count", nullable = false)
     private Integer viewCount = 0;
 
+    @Column(name = "like_count", nullable = false)
+    private Integer likeCount = 0;
+
     @Column(name = "thumb_image_url", length = 500)
     private String thumbImageUrl;
 
@@ -53,6 +56,7 @@ public class Post {
         this.thumbImageUrl = thumbImageUrl;
         this.author = author;
         this.viewCount = 0;
+        this.likeCount = 0;
     }
 
     public void increaseViewCount() {
@@ -63,5 +67,15 @@ public class Post {
         this.title = title;
         this.content = content;
         this.thumbImageUrl = thumbImageUrl;
+    }
+
+    public void increaseLikeCount() {
+        this.likeCount++;
+    }
+
+    public void decreaseLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
     }
 }
