@@ -223,36 +223,35 @@ public class DogService {
     }
 
     /**
-     * 유기견 삭제
+     * 유기견 소프트 삭제
+     * 실제 데이터를 삭제하지 않고 deleted 플래그를 true로 설정
+     * 채팅방과의 무결성 문제를 해결하기 위해 물리적 삭제 대신 논리적 삭제 수행
      *
      * @param dogId 유기견 ID
      * @param user 세션 사용자 정보
      */
     @Transactional
     public void deleteDog(Long dogId, SessionUser user) {
-        // 1. 유기견 조회
-        Dog dog = dogRepository.findById(dogId)
+        // 1. 유기견 조회 (삭제된 유기견도 포함하여 조회)
+        Dog dog = dogRepository.findByIdWithAssociationsIncludeDeleted(dogId)
                 .orElseThrow(() -> new DogException(ErrorCode.DOG_NOT_FOUND));
 
-        // 2. 권한 검증 (본인이 등록한 유기견인지 확인)
-        dogValidator.validateDogAccess(dog, user);
-
-        // 3. GCP Storage에서 이미지 삭제
-        if (dog.getImageUrl() != null && !dog.getImageUrl().isBlank()) {
-            try {
-                uploadService.deleteImageFromStorage(dog.getImageUrl());
-            } catch (Exception e) {
-                // 이미지 삭제 실패 시 로그는 남기지만 DB 삭제는 계속 진행
-                // (이미지가 이미 삭제되었거나 네트워크 이슈일 수 있음)
-                log.warn("강아지 삭제 중 이미지 삭제 실패 (dogId: {}, imageUrl: {}): {}",
-                        dogId, dog.getImageUrl(), e.getMessage());
-            }
+        // 2. 이미 삭제된 유기견인지 확인
+        if (dog.isDeleted()) {
+            throw new DogException(ErrorCode.DOG_ALREADY_DELETED);
         }
 
-        // 4. DB에서 삭제 수행
-        dogRepository.delete(dog);
+        // 3. 권한 검증 (본인이 등록한 유기견인지 확인)
+        dogValidator.validateDogAccess(dog, user);
+
+        // 4. 소프트 삭제 수행
+        dog.softDelete();
 
         // 5. OpenSearch 동기화를 위한 이벤트 발행
         eventPublisher.publishEvent(DogEvent.deleted(dogId));
+
+        // 참고: 이미지는 삭제하지 않음 - 관련 채팅방에서 계속 참조될 수 있음
+        // 필요시 별도의 배치 작업으로 미사용 이미지 정리 가능
+        log.info("유기견 소프트 삭제 완료 (dogId: {}, memberId: {})", dogId, user.getMemberId());
     }
 }
