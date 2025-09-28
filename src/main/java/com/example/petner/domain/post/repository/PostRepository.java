@@ -38,6 +38,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p JOIN FETCH p.author WHERE p.postId = :postId")
     java.util.Optional<Post> findByIdWithAuthor(@Param("postId") Long postId);
 
+    @Query(value = "SELECT p FROM Post p JOIN FETCH p.author WHERE p.author = :author",
+            countQuery = "SELECT count(p) FROM Post p WHERE p.author = :author")
+    Page<Post> findByAuthorWithPaging(@Param("author") Member author, Pageable pageable);
+
     /**
      * 게시물의 좋아요 개수 증가
      */
