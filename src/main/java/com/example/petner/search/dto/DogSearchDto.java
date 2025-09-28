@@ -32,8 +32,14 @@ public class DogSearchDto {
     private final Long shelterId;
     private final String shelterName;
     private final String location;
+    private final String memberLocation;
+    private final String shelterLocation;
 
     public static DogSearchDto from(Dog dog) {
+        String memberLocation = buildLocationString(dog.getMember().getLocation());
+        String shelterLocation = buildLocationString(dog.getShelter() != null ? dog.getShelter().getLocation() : null);
+        String primaryLocation = shelterLocation != null ? shelterLocation : memberLocation; // shelter 우선, 없으면 member
+
         return new DogSearchDto(
                 dog.getDogId(),
                 dog.getName(),
@@ -51,8 +57,13 @@ public class DogSearchDto {
                 dog.getMember().getMemberId(),
                 dog.getShelter() != null ? dog.getShelter().getShelterId() : null,
                 dog.getShelter() != null ? dog.getShelter().getName() : null,
-                dog.getShelter() != null && dog.getShelter().getLocation() != null ?
-                    dog.getShelter().getLocation().getState() + " " + dog.getShelter().getLocation().getDistrict() : null
+                primaryLocation,
+                memberLocation,
+                shelterLocation
         );
+    }
+
+    private static String buildLocationString(com.example.petner.domain.location.entity.Location location) {
+        return location != null ? location.getState() + " " + location.getDistrict() : null;
     }
 }
