@@ -7,8 +7,6 @@ CREATE TABLE dog_applies (
     dog_id BIGINT NOT NULL,
     applicant_id BIGINT NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-    application_message TEXT,
-    response_message TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     processed_at TIMESTAMP,
@@ -30,26 +28,10 @@ COMMENT ON COLUMN dog_applies.dog_apply_id IS '분양 신청 ID';
 COMMENT ON COLUMN dog_applies.dog_id IS '유기견 ID';
 COMMENT ON COLUMN dog_applies.applicant_id IS '신청자 ID';
 COMMENT ON COLUMN dog_applies.status IS '신청 상태 (PENDING, APPROVED, REJECTED)';
-COMMENT ON COLUMN dog_applies.application_message IS '신청 메시지';
-COMMENT ON COLUMN dog_applies.response_message IS '처리 메시지 (승인/거절 시)';
 COMMENT ON COLUMN dog_applies.created_at IS '신청 생성 시간';
 COMMENT ON COLUMN dog_applies.updated_at IS '마지막 수정 시간';
 COMMENT ON COLUMN dog_applies.processed_at IS '처리 시간 (승인/거절 시점)';
 
--- updated_at 자동 업데이트를 위한 트리거 함수 생성
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- updated_at 자동 업데이트 트리거 생성
-CREATE TRIGGER update_dog_applies_updated_at
-    BEFORE UPDATE ON dog_applies
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
 
 -- 성능 최적화를 위한 인덱스 생성
 CREATE INDEX idx_dog_applies_dog_id ON dog_applies(dog_id);

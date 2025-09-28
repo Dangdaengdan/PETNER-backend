@@ -3,7 +3,6 @@ package com.example.petner.domain.dogApply.dto.request;
 import com.example.petner.domain.dogApply.common.ApplyStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -26,19 +25,4 @@ public class DogApplyProcessRequestDto {
         this.status = status;
     }
 
-    /**
-     * 승인 상태인지 확인
-     * @return 승인 여부
-     */
-    public boolean isApproval() {
-        return this.status == ApplyStatus.APPROVED;
-    }
-
-    /**
-     * 거절 상태인지 확인
-     * @return 거절 여부
-     */
-    public boolean isRejection() {
-        return this.status == ApplyStatus.REJECTED;
-    }
 }

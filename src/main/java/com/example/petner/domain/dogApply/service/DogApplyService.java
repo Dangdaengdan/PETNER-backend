@@ -86,9 +86,9 @@ public class DogApplyService {
         validateProcessStatus(requestDto.getStatus());
 
         // 4. 신청 처리 (승인 또는 거절)
-        if (requestDto.isApproval()) {
+        if (requestDto.getStatus() == ApplyStatus.APPROVED) {
             dogApply.approve();
-        } else if (requestDto.isRejection()) {
+        } else if (requestDto.getStatus() == ApplyStatus.REJECTED) {
             dogApply.reject();
         }
 
