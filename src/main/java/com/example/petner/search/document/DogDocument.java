@@ -38,9 +38,15 @@ public class DogDocument {
     private Long memberId;
     private Long shelterId;
     private String shelterName;
-    private String location; // shelter 위치 정보
+    private String location; // 통합 위치 정보 (기존 호환성 유지)
+    private String memberLocation; // member 위치 정보
+    private String shelterLocation; // shelter 위치 정보
 
     public static DogDocument from(Dog dog) {
+        String memberLocation = buildLocationString(dog.getMember().getLocation());
+        String shelterLocation = buildLocationString(dog.getShelter() != null ? dog.getShelter().getLocation() : null);
+        String primaryLocation = shelterLocation != null ? shelterLocation : memberLocation; // shelter 우선, 없으면 member
+
         return DogDocument.builder()
                 .id(String.valueOf(dog.getDogId()))
                 .dogId(dog.getDogId())
@@ -59,9 +65,14 @@ public class DogDocument {
                 .memberId(dog.getMember().getMemberId())
                 .shelterId(dog.getShelter() != null ? dog.getShelter().getShelterId() : null)
                 .shelterName(dog.getShelter() != null ? dog.getShelter().getName() : null)
-                .location(dog.getShelter() != null && dog.getShelter().getLocation() != null ?
-                    dog.getShelter().getLocation().getState() + " " + dog.getShelter().getLocation().getDistrict() : null)
+                .location(primaryLocation)
+                .memberLocation(memberLocation)
+                .shelterLocation(shelterLocation)
                 .build();
+    }
+
+    private static String buildLocationString(com.example.petner.domain.location.entity.Location location) {
+        return location != null ? location.getState() + " " + location.getDistrict() : null;
     }
 
     public static DogDocument from(DogSearchDto dto) {
@@ -84,6 +95,8 @@ public class DogDocument {
                 .shelterId(dto.getShelterId())
                 .shelterName(dto.getShelterName())
                 .location(dto.getLocation())
+                .memberLocation(dto.getMemberLocation())
+                .shelterLocation(dto.getShelterLocation())
                 .build();
     }
 }

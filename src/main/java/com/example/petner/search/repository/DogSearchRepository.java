@@ -91,7 +91,14 @@ public class DogSearchRepository {
         }
 
         if (location != null && !location.trim().isEmpty()) {
-            boolQuery.filter(Query.of(q -> q.match(m -> m.field("location").query(FieldValue.of(location)))));
+            // Member location OR Shelter location 검색 - 부분 일치로 검색
+            Query locationQuery = Query.of(q -> q.bool(b -> b
+                .should(Query.of(sq -> sq.matchPhrase(m -> m.field("memberLocation").query(location))))
+                .should(Query.of(sq -> sq.matchPhrase(m -> m.field("shelterLocation").query(location))))
+                .should(Query.of(sq -> sq.matchPhrase(m -> m.field("location").query(location)))) // 기존 호환성
+                .minimumShouldMatch("1")
+            ));
+            boolQuery.filter(locationQuery);
         }
 
         if (adoptionStatus != null) {
