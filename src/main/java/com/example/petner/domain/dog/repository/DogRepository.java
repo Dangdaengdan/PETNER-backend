@@ -42,7 +42,7 @@ public interface DogRepository extends JpaRepository<Dog, Long> {
     List<Dog> findAllWithAssociations();
 
     /**
-     * N+1 문제 해결을 위한 페치 조인 - 개별 조회
+     * N+1 문제 해결을 위한 페치 조인 - 개별 조회 (기존 기능용)
      * Dog와 연관된 Breed, Member, Shelter를 한 번의 쿼리로 조회
      */
     @Query("SELECT d FROM Dog d " +
@@ -58,7 +58,8 @@ public interface DogRepository extends JpaRepository<Dog, Long> {
      */
     @Query("SELECT d FROM Dog d " +
            "JOIN FETCH d.breed " +
-           "JOIN FETCH d.member " +
+           "JOIN FETCH d.member m " +
+           "LEFT JOIN FETCH m.location " +
            "LEFT JOIN FETCH d.shelter s " +
            "LEFT JOIN FETCH s.location " +
            "WHERE d.dogId = :dogId AND d.deleted = false")
