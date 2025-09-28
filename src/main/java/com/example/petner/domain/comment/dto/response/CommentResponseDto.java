@@ -14,6 +14,7 @@ public class CommentResponseDto {
     private final String authorNickname;
     private final LocalDateTime createdAt;
     private final LocalDateTime updatedAt;
+    private final LocalDateTime deletedAt;
     private final Long parentCommentId;
     private final boolean isReply;
     private List<CommentResponseDto> replies;
@@ -24,6 +25,7 @@ public class CommentResponseDto {
         this.authorNickname = comment.getMember().getNickname();
         this.createdAt = comment.getCreatedAt();
         this.updatedAt = comment.getUpdatedAt();
+        this.deletedAt = comment.getDeletedAt();
         this.parentCommentId = comment.getParentComment() != null ? comment.getParentComment().getCommentId() : null;
         this.isReply = comment.isReply();
         this.replies = List.of();
