@@ -69,10 +69,17 @@ public class DogSearchRepository {
 
         // 키워드 검색: name과 description만 검색 대상
         if (keyword != null && !keyword.trim().isEmpty()) {
-            Query keywordQuery = Query.of(q -> q.multiMatch(m -> m
-                .query(keyword)
-                .fields("name^2", "description")
-                .analyzer("nori")
+            Query keywordQuery = Query.of(q -> q.bool(b -> b
+                .should(Query.of(sq -> sq.multiMatch(m -> m
+                    .query(keyword)
+                    .fields("name^3", "description")
+                    .analyzer("nori")
+                )))
+                .should(Query.of(sq -> sq.match(m -> m
+                    .field("name.ngram")
+                    .query(FieldValue.of(keyword))
+                )))
+                .minimumShouldMatch("1")
             ));
             boolQuery.must(keywordQuery);
         }

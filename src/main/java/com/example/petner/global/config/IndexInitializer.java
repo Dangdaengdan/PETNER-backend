@@ -105,12 +105,23 @@ public class IndexInitializer {
                           "type": "custom",
                           "tokenizer": "nori_tokenizer",
                           "filter": ["lowercase", "nori_part_of_speech"]
+                        },
+                        "ngram_analyzer": {
+                          "type": "custom",
+                          "tokenizer": "ngram_tokenizer",
+                          "filter": ["lowercase"]
                         }
                       },
                       "tokenizer": {
                         "nori_tokenizer": {
                           "type": "nori_tokenizer",
                           "decompound_mode": "mixed"
+                        },
+                        "ngram_tokenizer": {
+                          "type": "ngram",
+                          "min_gram": 2,
+                          "max_gram": 3,
+                          "token_chars": ["letter", "digit"]
                         }
                       }
                     }
@@ -122,7 +133,11 @@ public class IndexInitializer {
                         "type": "text",
                         "analyzer": "nori_analyzer",
                         "fields": {
-                          "keyword": {"type": "keyword"}
+                          "keyword": {"type": "keyword"},
+                          "ngram": {
+                            "type": "text",
+                            "analyzer": "ngram_analyzer"
+                          }
                         }
                       },
                       "breedName": {"type": "keyword"},
@@ -145,7 +160,9 @@ public class IndexInitializer {
                       "memberId": {"type": "long"},
                       "shelterId": {"type": "long"},
                       "shelterName": {"type": "keyword"},
-                      "location": {"type": "keyword"}
+                      "location": {"type": "keyword"},
+                      "memberLocation": {"type": "keyword"},
+                      "shelterLocation": {"type": "keyword"}
                     }
                   }
                 }
