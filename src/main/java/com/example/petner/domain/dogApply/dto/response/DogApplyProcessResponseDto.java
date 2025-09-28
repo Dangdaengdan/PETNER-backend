@@ -28,8 +28,6 @@ public class DogApplyProcessResponseDto {
     @Schema(description = "처리된 상태", example = "APPROVED")
     private ApplyStatus status;
 
-    @Schema(description = "응답 메시지", example = "신중히 검토한 결과 승인드립니다.")
-    private String responseMessage;
 
     @Schema(description = "처리 시간", example = "2024-09-28T14:20:00")
     private LocalDateTime processedAt;
@@ -51,7 +49,6 @@ public class DogApplyProcessResponseDto {
                 .dogId(dogApply.getDog().getDogId())
                 .applicantId(dogApply.getApplicant().getMemberId())
                 .status(dogApply.getStatus())
-                .responseMessage(dogApply.getResponseMessage())
                 .processedAt(dogApply.getProcessedAt())
                 .message(resultMessage)
                 .build();

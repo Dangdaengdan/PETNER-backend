@@ -22,15 +22,8 @@ public class DogApplyProcessRequestDto {
             required = true)
     private ApplyStatus status;
 
-    @Size(max = 1000, message = "응답 메시지는 1000자 이하여야 합니다")
-    @Schema(description = "승인/거절 응답 메시지",
-            example = "신중히 검토한 결과 승인드립니다. 연락 주시면 만날 시간을 정하겠습니다.",
-            maxLength = 1000)
-    private String responseMessage;
-
-    public DogApplyProcessRequestDto(ApplyStatus status, String responseMessage) {
+    public DogApplyProcessRequestDto(ApplyStatus status) {
         this.status = status;
-        this.responseMessage = responseMessage;
     }
 
     /**

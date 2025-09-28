@@ -57,11 +57,6 @@ public class DogApply {
     @Column(name = "status", nullable = false)
     private ApplyStatus status = ApplyStatus.PENDING;
 
-    /**
-     * 처리 메시지 (승인/거절 시 유기견 등록자가 작성하는 메시지)
-     */
-    @Column(name = "response_message", columnDefinition = "TEXT")
-    private String responseMessage;
 
     /**
      * 신청 생성 시간
@@ -78,10 +73,11 @@ public class DogApply {
     private LocalDateTime updatedAt;
 
     /**
-     * 처리 시간 (승인/거절 시점)
+     * 신청 처리 시간 (승인/거절 시간)
      */
     @Column(name = "processed_at")
     private LocalDateTime processedAt;
+
 
     @Builder
     public DogApply(Dog dog, Member applicant) {
@@ -92,23 +88,19 @@ public class DogApply {
 
     /**
      * 분양 신청 승인
-     * @param responseMessage 승인 메시지
      */
-    public void approve(String responseMessage) {
+    public void approve() {
         validatePendingStatus();
         this.status = ApplyStatus.APPROVED;
-        this.responseMessage = responseMessage;
         this.processedAt = LocalDateTime.now();
     }
 
     /**
      * 분양 신청 거절
-     * @param responseMessage 거절 메시지
      */
-    public void reject(String responseMessage) {
+    public void reject() {
         validatePendingStatus();
         this.status = ApplyStatus.REJECTED;
-        this.responseMessage = responseMessage;
         this.processedAt = LocalDateTime.now();
     }
 

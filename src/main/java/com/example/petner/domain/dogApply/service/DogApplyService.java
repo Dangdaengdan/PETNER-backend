@@ -56,7 +56,6 @@ public class DogApplyService {
         DogApply dogApply = DogApply.builder()
                 .dog(dog)
                 .applicant(applicant)
-                .applicationMessage(requestDto.getApplicationMessage())
                 .build();
 
         // 5. 데이터베이스에 저장
@@ -88,9 +87,9 @@ public class DogApplyService {
 
         // 4. 신청 처리 (승인 또는 거절)
         if (requestDto.isApproval()) {
-            dogApply.approve(requestDto.getResponseMessage());
+            dogApply.approve();
         } else if (requestDto.isRejection()) {
-            dogApply.reject(requestDto.getResponseMessage());
+            dogApply.reject();
         }
 
         log.info("분양 신청 처리 완료 - applyId: {}, status: {}, processedBy: {}",
