@@ -37,6 +37,15 @@ public enum ErrorCode {
     DOG_SHELTER_NOT_FOUND("404-DG06", "보호소 정보를 찾을 수 없습니다", HttpStatus.NOT_FOUND),
     DOG_ALREADY_DELETED("410-DG07", "이미 삭제된 강아지입니다", HttpStatus.GONE),
 
+    /* 유기견 분양 신청 관련 */
+    DOG_APPLY_NOT_FOUND("404-DA01", "분양 신청을 찾을 수 없습니다", HttpStatus.NOT_FOUND),
+    DOG_APPLY_ALREADY_EXISTS("409-DA02", "이미 신청한 유기견입니다", HttpStatus.CONFLICT),
+    DOG_APPLY_SELF_APPLICATION("400-DA03", "자신의 유기견에는 신청할 수 없습니다", HttpStatus.BAD_REQUEST),
+    DOG_APPLY_NOT_AVAILABLE("400-DA04", "분양 신청이 불가능한 유기견입니다", HttpStatus.BAD_REQUEST),
+    DOG_APPLY_ACCESS_DENIED("403-DA05", "분양 신청에 대한 접근 권한이 없습니다", HttpStatus.FORBIDDEN),
+    DOG_APPLY_ALREADY_PROCESSED("409-DA06", "이미 처리된 분양 신청입니다", HttpStatus.CONFLICT),
+    DOG_APPLY_INVALID_STATUS("400-DA07", "유효하지 않은 처리 상태입니다", HttpStatus.BAD_REQUEST),
+
     /* 게시글 관련 */
     POST_NOT_FOUND("404-PT01", "게시글을 찾을 수 없습니다", HttpStatus.NOT_FOUND),
     POST_ACCESS_DENIED("403-PT02", "게시글에 대한 접근 권한이 없습니다", HttpStatus.FORBIDDEN),

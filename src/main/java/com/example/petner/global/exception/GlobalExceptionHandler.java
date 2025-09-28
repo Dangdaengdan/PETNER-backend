@@ -33,6 +33,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             MemberException.class,
             DogException.class,
+            DogApplyException.class,
             PostException.class,
             ChatException.class,
             CommentException.class,
