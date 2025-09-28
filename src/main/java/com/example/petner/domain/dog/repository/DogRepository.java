@@ -17,16 +17,16 @@ import java.util.Optional;
 @Repository
 public interface DogRepository extends JpaRepository<Dog, Long> {
 
-    List<Dog> findByMember(Member member);
+    List<Dog> findByMemberAndDeletedFalse(Member member);
 
-    List<Dog> findByShelter(Shelter shelter);
+    List<Dog> findByShelterAndDeletedFalse(Shelter shelter);
 
-    List<Dog> findByAdoptionStatus(AdoptionStatus adoptionStatus);
+    List<Dog> findByAdoptionStatusAndDeletedFalse(AdoptionStatus adoptionStatus);
 
-    @Query("SELECT d FROM Dog d WHERE d.adoptionStatus = :status ORDER BY d.createdAt DESC")
+    @Query("SELECT d FROM Dog d WHERE d.adoptionStatus = :status AND d.deleted = false ORDER BY d.createdAt DESC")
     List<Dog> findByAdoptionStatusOrderByCreatedAtDesc(@Param("status") AdoptionStatus status);
 
-    @Query("SELECT d FROM Dog d WHERE d.member.location.locationId = :locationId AND d.adoptionStatus = :status")
+    @Query("SELECT d FROM Dog d WHERE d.member.location.locationId = :locationId AND d.adoptionStatus = :status AND d.deleted = false")
     List<Dog> findByLocationAndAdoptionStatus(@Param("locationId") Long locationId, @Param("status") AdoptionStatus status);
 
     /**
@@ -37,6 +37,7 @@ public interface DogRepository extends JpaRepository<Dog, Long> {
            "JOIN FETCH d.breed " +
            "JOIN FETCH d.member " +
            "LEFT JOIN FETCH d.shelter " +
+           "WHERE d.deleted = false " +
            "ORDER BY d.createdAt DESC")
     List<Dog> findAllWithAssociations();
 
@@ -48,7 +49,7 @@ public interface DogRepository extends JpaRepository<Dog, Long> {
            "JOIN FETCH d.breed " +
            "JOIN FETCH d.member " +
            "LEFT JOIN FETCH d.shelter " +
-           "WHERE d.dogId = :dogId")
+           "WHERE d.dogId = :dogId AND d.deleted = false")
     Optional<Dog> findByIdWithAssociations(@Param("dogId") Long dogId);
 
     /**
@@ -60,7 +61,7 @@ public interface DogRepository extends JpaRepository<Dog, Long> {
            "JOIN FETCH d.member " +
            "LEFT JOIN FETCH d.shelter s " +
            "LEFT JOIN FETCH s.location " +
-           "WHERE d.dogId = :dogId")
+           "WHERE d.dogId = :dogId AND d.deleted = false")
     Optional<Dog> findByIdWithAllAssociations(@Param("dogId") Long dogId);
 
     /**
@@ -71,7 +72,8 @@ public interface DogRepository extends JpaRepository<Dog, Long> {
     @Query(value = "SELECT d FROM Dog d " +
            "JOIN FETCH d.breed " +
            "JOIN FETCH d.member " +
-           "LEFT JOIN FETCH d.shelter")
+           "LEFT JOIN FETCH d.shelter " +
+           "WHERE d.deleted = false")
     List<Dog> findAllWithAssociationsPaging(Pageable pageable);
 
     /**
@@ -83,6 +85,18 @@ public interface DogRepository extends JpaRepository<Dog, Long> {
            "JOIN FETCH d.breed " +
            "JOIN FETCH d.member " +
            "LEFT JOIN FETCH d.shelter " +
-           "WHERE d.member.memberId = :memberId")
+           "WHERE d.member.memberId = :memberId AND d.deleted = false")
     List<Dog> findByMemberIdWithAssociationsPaging(@Param("memberId") Long memberId, Pageable pageable);
+
+    /**
+     * 삭제된 유기견도 포함하여 ID로 조회 (관리자 또는 삭제 작업용)
+     * @param dogId 유기견 ID
+     * @return 삭제 여부와 관계없이 조회된 유기견
+     */
+    @Query("SELECT d FROM Dog d " +
+           "JOIN FETCH d.breed " +
+           "JOIN FETCH d.member " +
+           "LEFT JOIN FETCH d.shelter " +
+           "WHERE d.dogId = :dogId")
+    Optional<Dog> findByIdWithAssociationsIncludeDeleted(@Param("dogId") Long dogId);
 }

@@ -35,6 +35,7 @@ public enum ErrorCode {
     DOG_ACCESS_DENIED("403-DG04", "강아지 정보에 대한 접근 권한이 없습니다", HttpStatus.FORBIDDEN),
     DOG_BREED_NOT_FOUND("404-DG05", "견종 정보를 찾을 수 없습니다", HttpStatus.NOT_FOUND),
     DOG_SHELTER_NOT_FOUND("404-DG06", "보호소 정보를 찾을 수 없습니다", HttpStatus.NOT_FOUND),
+    DOG_ALREADY_DELETED("410-DG07", "이미 삭제된 강아지입니다", HttpStatus.GONE),
 
     /* 게시글 관련 */
     POST_NOT_FOUND("404-PT01", "게시글을 찾을 수 없습니다", HttpStatus.NOT_FOUND),

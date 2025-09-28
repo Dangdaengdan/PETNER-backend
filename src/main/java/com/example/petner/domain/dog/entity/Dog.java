@@ -78,6 +78,9 @@ public class Dog {
     @JoinColumn(name = "shelter_id")
     private Shelter shelter;
 
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted = false;
+
     @Builder
     public Dog(String name, Breed breed, String birthDate, Gender gender, DogSize dogSize,
                BigDecimal weight, String healthStatus, String description, AdoptionStatus adoptionStatus,
@@ -110,5 +113,21 @@ public class Dog {
         this.adoptionStatus = adoptionStatus;
         this.imageUrl = imageUrl;
         this.shelter = shelter;
+    }
+
+    /**
+     * 유기견 소프트 삭제
+     * 실제 데이터를 삭제하지 않고 deleted 플래그를 true로 설정
+     */
+    public void softDelete() {
+        this.deleted = true;
+    }
+
+    /**
+     * 유기견 삭제 상태 확인
+     * @return 삭제 여부
+     */
+    public boolean isDeleted() {
+        return this.deleted;
     }
 }
