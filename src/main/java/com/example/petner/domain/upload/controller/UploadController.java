@@ -62,8 +62,7 @@ public class UploadController {
     // Presigned URL 생성 (파일 로드/다운로드)
     @GetMapping("/presigned-url/download")
     public ResponseEntity<DownloadUrlResponseDto> generatePresignedGetUrl(
-            @RequestParam String objectName,
-            @SessionMember SessionUser user) {
+            @RequestParam String objectName) {
         if (objectName == null || objectName.isBlank()) {
             throw new UploadException(ErrorCode.UPLOAD_OBJECT_NOT_FOUND);
         }
