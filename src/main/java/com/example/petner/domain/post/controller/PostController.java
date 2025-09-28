@@ -76,6 +76,24 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/my")
+    @Operation(summary = "내 게시물 목록 조회", description = "현재 사용자가 작성한 게시물 목록을 페이징하여 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "내 게시물 목록 조회 성공")
+    public ResponseEntity<Page<PostSummaryResponseDto>> getMyPosts(
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기", example = "10") @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "정렬 방식 (예: createdAt,desc)", example = "createdAt,desc") @RequestParam(defaultValue = "createdAt,desc") String sort,
+            @SessionMember SessionUser user) {
+
+        String[] sortParams = sort.split(",");
+        Sort.Direction direction = sortParams.length > 1 && "asc".equalsIgnoreCase(sortParams[1])
+            ? Sort.Direction.ASC : Sort.Direction.DESC;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortParams[0]));
+        Page<PostSummaryResponseDto> response = postService.getMyPosts(user.getMemberId(), pageable);
+        return ResponseEntity.ok(response);
+    }
+
     @PatchMapping("/{postId}")
     @Operation(summary = "게시물 수정", description = "특정 게시물을 수정합니다.")
     @ApiResponse(responseCode = "200", description = "게시물 수정 성공")

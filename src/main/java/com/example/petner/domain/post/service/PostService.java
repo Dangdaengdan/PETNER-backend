@@ -33,6 +33,7 @@ public class PostService {
     private final ApplicationEventPublisher eventPublisher;
     private final UploadService uploadService;
     private final PostUpdater postUpdater;
+    private final PostDeleteService postDeleteService;
 
     @Transactional
     public PostResponseDto createPost(Long authorId, PostCreateRequestDto request) {
@@ -72,7 +73,7 @@ public class PostService {
 
     @Transactional
     public PostResponseDto getPost(Long postId) {
-        Post post = postRepository.findByIdWithAuthor(postId)
+        Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new PostException(ErrorCode.POST_NOT_FOUND));
         post.increaseViewCount();
 
@@ -84,6 +85,14 @@ public class PostService {
 
     public Page<PostSummaryResponseDto> getPosts(Pageable pageable) {
         return postRepository.findAllWithAuthor(pageable)
+                .map(PostSummaryResponseDto::new);
+    }
+
+    public Page<PostSummaryResponseDto> getMyPosts(Long currentUserId, Pageable pageable) {
+        Member author = memberRepository.findById(currentUserId)
+                .orElseThrow(() -> new MemberException(ErrorCode.MEMBER_NOT_FOUND));
+
+        return postRepository.findByAuthorWithPaging(author, pageable)
                 .map(PostSummaryResponseDto::new);
     }
 
@@ -108,30 +117,6 @@ public class PostService {
 
     @Transactional
     public PostDeleteResponseDto deletePost(Long postId, Long currentUserId) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new PostException(ErrorCode.POST_NOT_FOUND));
-
-        // 작성자 권한 확인
-        if (!post.getAuthor().getMemberId().equals(currentUserId)) {
-            throw new PostException(ErrorCode.POST_ACCESS_DENIED);
-        }
-
-        // GCP Storage에서 썸네일 이미지 삭제
-        if (post.getThumbImageUrl() != null && !post.getThumbImageUrl().isBlank()) {
-            try {
-                uploadService.deleteImageFromStorage(post.getThumbImageUrl());
-            } catch (Exception e) {
-                // 이미지 삭제 실패 시 로그는 남기지만 DB 삭제는 계속 진행
-                log.warn("게시글 삭제 중 썸네일 이미지 삭제 실패 (postId: {}, imageUrl: {}): {}",
-                        postId, post.getThumbImageUrl(), e.getMessage());
-            }
-        }
-
-        postRepository.delete(post);
-
-        // OpenSearch 동기화를 위한 이벤트 발행
-        eventPublisher.publishEvent(PostEvent.deleted(postId));
-
-        return PostDeleteResponseDto.success(postId, currentUserId);
+        return postDeleteService.deletePost(postId, currentUserId);
     }
 }
