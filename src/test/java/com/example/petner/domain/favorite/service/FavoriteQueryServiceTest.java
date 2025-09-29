@@ -1,10 +1,15 @@
 package com.example.petner.domain.favorite.service;
 
+import com.example.petner.domain.breed.entity.Breed;
+import com.example.petner.domain.dog.common.AdoptionStatus;
+import com.example.petner.domain.dog.common.DogSize;
 import com.example.petner.domain.dog.entity.Dog;
 import com.example.petner.domain.favorite.dto.response.FavoriteListResponseDto;
 import com.example.petner.domain.favorite.entity.Favorite;
 import com.example.petner.domain.favorite.repository.FavoriteRepository;
 import com.example.petner.domain.member.entity.Member;
+import com.example.petner.domain.shelter.entity.Shelter;
+import com.example.petner.global.config.common.Gender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -224,17 +230,17 @@ class FavoriteQueryServiceTest {
     @DisplayName("즐겨찾기 존재 여부 확인 - 다양한 ID 조합")
     void isFavorite_VariousIdCombinations() {
         // Given
-        Long[][] testCases = {
+        Object[][] testCases = {
                 {1L, 1L, true},
                 {1L, 2L, false},
                 {2L, 1L, false},
                 {999L, 888L, false}
         };
 
-        for (Long[] testCase : testCases) {
-            Long memberId = testCase[0];
-            Long dogId = testCase[1];
-            boolean expected = testCase[2] == 1L;
+        for (Object[] testCase : testCases) {
+            Long memberId = (Long) testCase[0];
+            Long dogId = (Long) testCase[1];
+            boolean expected = (Boolean) testCase[2];
 
             when(favoriteRepository.existsByMemberMemberIdAndDogDogId(memberId, dogId))
                     .thenReturn(expected);
@@ -361,6 +367,24 @@ class FavoriteQueryServiceTest {
         Dog dog = mock(Dog.class);
         when(dog.getDogId()).thenReturn(dogId);
         when(dog.getName()).thenReturn(name);
+
+        // Mock Breed
+        Breed mockBreed = mock(Breed.class);
+        when(mockBreed.getName()).thenReturn("테스트견종");
+        when(dog.getBreed()).thenReturn(mockBreed);
+
+        // Mock other Dog properties
+        when(dog.getGender()).thenReturn(Gender.MALE);
+        when(dog.getDogSize()).thenReturn(DogSize.대형);
+        when(dog.getWeight()).thenReturn(new BigDecimal("25.5"));
+        when(dog.getAdoptionStatus()).thenReturn(AdoptionStatus.입양_가능);
+        when(dog.getImageUrl()).thenReturn("test-image.jpg");
+
+        // Mock Shelter
+        Shelter mockShelter = mock(Shelter.class);
+        when(mockShelter.getName()).thenReturn("테스트보호소");
+        when(dog.getShelter()).thenReturn(mockShelter);
+
         return dog;
     }
 

@@ -53,9 +53,9 @@ class FavoriteListResponseDtoTest {
         assertEquals("테스트강아지", dogInfo.getName());
         assertEquals("골든리트리버", dogInfo.getBreedName());
         assertEquals("MALE", dogInfo.getGender());
-        assertEquals("LARGE", dogInfo.getDogSize());
+        assertEquals("대형", dogInfo.getDogSize());
         assertEquals(new BigDecimal("30.5"), dogInfo.getWeight());
-        assertEquals("AVAILABLE", dogInfo.getAdoptionStatus());
+        assertEquals("입양_가능", dogInfo.getAdoptionStatus());
         assertEquals("dog-image.jpg", dogInfo.getImageUrl());
         assertEquals("테스트보호소", dogInfo.getShelterName());
     }
@@ -84,9 +84,9 @@ class FavoriteListResponseDtoTest {
         assertEquals("테스트강아지", dogInfo.getName());
         assertEquals("골든리트리버", dogInfo.getBreedName());
         assertEquals("MALE", dogInfo.getGender());
-        assertEquals("LARGE", dogInfo.getDogSize());
+        assertEquals("대형", dogInfo.getDogSize());
         assertEquals(new BigDecimal("30.5"), dogInfo.getWeight());
-        assertEquals("AVAILABLE", dogInfo.getAdoptionStatus());
+        assertEquals("입양_가능", dogInfo.getAdoptionStatus());
         assertEquals("dog-image.jpg", dogInfo.getImageUrl());
         assertEquals("테스트보호소", dogInfo.getShelterName());
     }
@@ -146,7 +146,7 @@ class FavoriteListResponseDtoTest {
     @DisplayName("FavoriteListResponseDto 생성 테스트 - 다양한 크기")
     void createFavoriteListResponseDto_WithDifferentSizes() {
         // Given
-        DogSize[] sizes = {DogSize.SMALL, DogSize.MEDIUM, DogSize.LARGE};
+        DogSize[] sizes = {DogSize.소형, DogSize.중형, DogSize.대형};
 
         for (DogSize size : sizes) {
             when(mockDog.getDogSize()).thenReturn(size);
@@ -164,7 +164,7 @@ class FavoriteListResponseDtoTest {
     @DisplayName("FavoriteListResponseDto 생성 테스트 - 다양한 입양 상태")
     void createFavoriteListResponseDto_WithDifferentAdoptionStatuses() {
         // Given
-        AdoptionStatus[] statuses = {AdoptionStatus.AVAILABLE, AdoptionStatus.ADOPTED, AdoptionStatus.PENDING};
+        AdoptionStatus[] statuses = {AdoptionStatus.입양_가능, AdoptionStatus.입양_절차_중, AdoptionStatus.입양_완료};
 
         for (AdoptionStatus status : statuses) {
             when(mockDog.getAdoptionStatus()).thenReturn(status);
@@ -420,9 +420,9 @@ class FavoriteListResponseDtoTest {
         when(dog.getName()).thenReturn("테스트강아지");
         when(dog.getBreed()).thenReturn(mockBreed);
         when(dog.getGender()).thenReturn(Gender.MALE);
-        when(dog.getDogSize()).thenReturn(DogSize.LARGE);
+        when(dog.getDogSize()).thenReturn(DogSize.대형);
         when(dog.getWeight()).thenReturn(new BigDecimal("30.5"));
-        when(dog.getAdoptionStatus()).thenReturn(AdoptionStatus.AVAILABLE);
+        when(dog.getAdoptionStatus()).thenReturn(AdoptionStatus.입양_가능);
         when(dog.getImageUrl()).thenReturn("dog-image.jpg");
         when(dog.getShelter()).thenReturn(mockShelter);
         return dog;

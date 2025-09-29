@@ -83,7 +83,7 @@ class FavoriteControllerTest {
     void addFavorite_DuplicateFavorite() {
         // Given
         when(favoriteService.addFavorite(any(FavoriteAddRequestDto.class), any(SessionUser.class)))
-                .thenThrow(new FavoriteException(ErrorCode.FAVORITE_ALREADY_IN_MY_LIST));
+                .thenThrow(new FavoriteException(ErrorCode.FAVORITE_ALREADY_EXISTS));
 
         // When & Then
         assertThrows(FavoriteException.class,
@@ -327,11 +327,11 @@ class FavoriteControllerTest {
     private List<FavoriteListResponseDto> createMockFavoriteList() {
         FavoriteListResponseDto favorite1 = mock(FavoriteListResponseDto.class);
         when(favorite1.getFavoriteId()).thenReturn(1L);
-        when(favorite1.getDogId()).thenReturn(1L);
+        when(favorite1.getFavoriteId()).thenReturn(1L);
 
         FavoriteListResponseDto favorite2 = mock(FavoriteListResponseDto.class);
         when(favorite2.getFavoriteId()).thenReturn(2L);
-        when(favorite2.getDogId()).thenReturn(2L);
+        when(favorite2.getFavoriteId()).thenReturn(2L);
 
         return Arrays.asList(favorite1, favorite2);
     }

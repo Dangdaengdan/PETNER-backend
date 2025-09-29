@@ -8,4 +8,9 @@ import com.example.petner.global.exception.ErrorCode;
 @RequiredArgsConstructor
 public class MemberException extends RuntimeException {
     private final ErrorCode errorCode;
+
+    @Override
+    public String getMessage() {
+        return errorCode.getMessage();
+    }
 }

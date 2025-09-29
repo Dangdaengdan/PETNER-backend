@@ -399,14 +399,14 @@ class CommentServiceTest {
         int invalidPage = -1;
         int invalidSize = 0;
 
-        doThrow(new CommentException(ErrorCode.INVALID_PAGING_PARAMS))
+        doThrow(new CommentException(ErrorCode.COMMENT_INVALID_REQUEST))
                 .when(commentValidator).validatePagingParams(invalidPage, invalidSize);
 
         // When & Then
         CommentException exception = assertThrows(CommentException.class,
                 () -> commentService.getCommentsByPostWithPaging(postId, invalidPage, invalidSize));
 
-        assertEquals(ErrorCode.INVALID_PAGING_PARAMS, exception.getErrorCode());
+        assertEquals(ErrorCode.COMMENT_INVALID_REQUEST, exception.getErrorCode());
         verify(commentValidator).validatePagingParams(invalidPage, invalidSize);
     }
 

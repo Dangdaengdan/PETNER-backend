@@ -338,7 +338,7 @@ class CommentControllerTest {
         when(emptyRequest.getContent()).thenReturn("");
 
         when(commentService.createComment(eq(postId), eq(1L), any(CommentCreateRequestDto.class)))
-                .thenThrow(new CommentException(ErrorCode.COMMENT_CONTENT_REQUIRED));
+                .thenThrow(new CommentException(ErrorCode.COMMENT_INVALID_REQUEST));
 
         // When & Then
         assertThrows(CommentException.class,
@@ -406,7 +406,7 @@ class CommentControllerTest {
         when(mock.getReplies()).thenReturn(List.of());
         when(mock.getCreatedAt()).thenReturn(LocalDateTime.now());
         when(mock.getUpdatedAt()).thenReturn(LocalDateTime.now());
-        when(mock.isDeleted()).thenReturn(false);
+        when(mock.getDeletedAt()).thenReturn(null);
         return mock;
     }
 
@@ -419,7 +419,7 @@ class CommentControllerTest {
         when(mock.getReplies()).thenReturn(List.of());
         when(mock.getCreatedAt()).thenReturn(LocalDateTime.now().minusHours(1));
         when(mock.getUpdatedAt()).thenReturn(LocalDateTime.now());
-        when(mock.isDeleted()).thenReturn(false);
+        when(mock.getDeletedAt()).thenReturn(null);
         return mock;
     }
 

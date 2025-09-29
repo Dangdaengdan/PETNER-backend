@@ -91,17 +91,17 @@ class FavoriteDuplicateCheckerTest {
     @DisplayName("중복 체크 - 다양한 ID 조합")
     void checkDuplicate_VariousIdCombinations() {
         // Given
-        Long[][] testCases = {
+        Object[][] testCases = {
                 {1L, 1L, false}, // 중복 없음
                 {1L, 2L, false}, // 중복 없음
                 {2L, 1L, false}, // 중복 없음
                 {100L, 200L, false} // 중복 없음
         };
 
-        for (Long[] testCase : testCases) {
-            Long memberId = testCase[0];
-            Long dogId = testCase[1];
-            boolean exists = testCase[2] == 1L;
+        for (Object[] testCase : testCases) {
+            Long memberId = (Long) testCase[0];
+            Long dogId = (Long) testCase[1];
+            boolean exists = (Boolean) testCase[2];
 
             when(favoriteRepository.existsByMemberMemberIdAndDogDogId(memberId, dogId))
                     .thenReturn(exists);
