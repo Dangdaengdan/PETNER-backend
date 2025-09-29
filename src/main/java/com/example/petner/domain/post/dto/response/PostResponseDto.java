@@ -12,6 +12,7 @@ public class PostResponseDto {
     private final String title;
     private final String content;
     private final String thumbImageUrl;
+    private final Long authorId;
     private final String authorNickname;
     private final int viewCount;
     private final int likeCount;
@@ -24,6 +25,7 @@ public class PostResponseDto {
         this.title = post.getTitle();
         this.content = post.getContent();
         this.thumbImageUrl = post.getThumbImageUrl();
+        this.authorId = post.getAuthor().getMemberId();
         this.authorNickname = post.getAuthor().getNickname();
         this.viewCount = post.getViewCount();
         this.likeCount = post.getLikeCount();
@@ -37,6 +39,7 @@ public class PostResponseDto {
         this.title = post.getTitle();
         this.content = post.getContent();
         this.thumbImageUrl = post.getThumbImageUrl();
+        this.authorId = post.getAuthor().getMemberId();
         this.authorNickname = post.getAuthor().getNickname();
         this.viewCount = post.getViewCount();
         this.likeCount = post.getLikeCount();
