@@ -220,7 +220,8 @@ class CommentDeleteResponseDtoTest {
         assertTrue(dto.getCommentId() instanceof Long);
         assertTrue(dto.getMemberId() instanceof Long);
         assertTrue(dto.getMessage() instanceof String);
-        assertTrue(dto.isSuccess() instanceof Boolean);
+        // boolean 타입 검증 - primitive 타입이므로 instanceof 대신 값 체크
+        assertNotNull(Boolean.valueOf(dto.isSuccess()));
     }
 
     @Test

@@ -266,7 +266,8 @@ class CommentResponseDtoTest {
         assertTrue(dto.getUpdatedAt() instanceof LocalDateTime);
         assertTrue(dto.getDeletedAt() == null || dto.getDeletedAt() instanceof LocalDateTime);
         assertTrue(dto.getParentCommentId() == null || dto.getParentCommentId() instanceof Long);
-        assertTrue(dto.isReply() instanceof Boolean);
+        // boolean 타입 검증 - primitive 타입이므로 instanceof 대신 값 체크
+        assertNotNull(Boolean.valueOf(dto.isReply()));
         assertTrue(dto.getReplies() instanceof List);
     }
 
