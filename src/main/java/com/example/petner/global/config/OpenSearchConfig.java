@@ -13,6 +13,11 @@ import org.springframework.context.annotation.Configuration;
 import org.apache.http.HttpHost;
 
 @Configuration
+ @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+    name = "opensearch.enabled",
+    havingValue = "true",
+    matchIfMissing = true
+)
 public class OpenSearchConfig {
 
     @Value("${opensearch.host:localhost}")
