@@ -2,9 +2,9 @@ package com.example.petner.domain.favorite.dto.response;
 
 import com.example.petner.domain.dog.common.AdoptionStatus;
 import com.example.petner.domain.dog.common.DogSize;
-import com.example.petner.domain.dog.entity.Breed;
+import com.example.petner.domain.breed.entity.Breed;
 import com.example.petner.domain.dog.entity.Dog;
-import com.example.petner.domain.dog.entity.Shelter;
+import com.example.petner.domain.shelter.entity.Shelter;
 import com.example.petner.domain.favorite.entity.Favorite;
 import com.example.petner.domain.member.entity.Member;
 import com.example.petner.global.config.common.Gender;

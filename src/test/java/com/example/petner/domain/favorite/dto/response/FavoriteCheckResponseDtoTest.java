@@ -176,7 +176,8 @@ class FavoriteCheckResponseDtoTest {
         // When & Then
         assertTrue(dto.getMemberId() instanceof Long);
         assertTrue(dto.getDogId() instanceof Long);
-        assertTrue(dto.isFavorite() instanceof Boolean || dto.isFavorite() == false); // primitive boolean 처리
+        // boolean 타입 검증 - primitive 타입이므로 instanceof 대신 값 체크
+        assertNotNull(Boolean.valueOf(dto.isFavorite()));
     }
 
     @Test
